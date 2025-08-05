@@ -5,7 +5,8 @@ Templates base para inicialização rápida de projetos com diferentes tecnologi
 ## Templates Disponíveis
 
 ### Backend
-- **fastapi_sqlalchemy** - FastAPI com SQLAlchemy, PostgreSQL, autenticação JWT
+- **fastapi_sqlalchemy** - FastAPI com SQLAlchemy (sync), PostgreSQL, autenticação JWT
+- **fastapi_sqlalchemy_async** - FastAPI com SQLAlchemy async, alta performance, PyJWT
 - **fastapi_beanieodm** - FastAPI com BeantieODM, MongoDB
 
 ### Frontend  
