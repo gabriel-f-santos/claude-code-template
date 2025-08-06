@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.core.database import get_db
-from src.repositories.account_repository import AccountRepository
+from src.accounts.repository.account_repository import AccountRepository
 from src.accounts.api.account_schemas import UserCreate, UserResponse
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])

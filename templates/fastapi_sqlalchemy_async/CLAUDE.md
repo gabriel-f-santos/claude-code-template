@@ -6,21 +6,23 @@ Esta versão implementa uma arquitetura modular organizada por features/domínio
 
 ## Estrutura do Projeto
 ```
-src/
-├── core/                    # Configurações e serviços centrais
-│   ├── database.py         # Configuração async do banco
-│   ├── settings.py         # Configurações da aplicação
-│   └── auth.py            # Serviços de autenticação
-├── repositories/          # Repository pattern para persistência
-│   └── account_repository.py  # Repository async de contas
-├── accounts/              # Feature de contas/usuários
-│   └── api/               # APIs da feature
-│       ├── create_account.py  # Endpoint async de criação
-│       ├── login.py          # Endpoint async de login
-│       └── account_schemas.py # Schemas Pydantic
-└── shared/                # Recursos compartilhados
-    └── models/            # Modelos SQLAlchemy
-        └── user.py        # Modelo User
+├── alembic/               # Migrações async do banco
+├── src/
+│   ├── core/              # Configurações e serviços centrais
+│   │   ├── database.py    # Configuração async do banco
+│   │   ├── settings.py    # Configurações da aplicação
+│   │   └── auth.py       # Serviços de autenticação
+│   ├── accounts/         # Feature de contas/usuários
+│   │   ├── api/          # APIs async da feature
+│   │   │   ├── create_account.py  # Endpoint async de criação
+│   │   │   ├── login.py          # Endpoint async de login
+│   │   │   └── account_schemas.py # Schemas Pydantic
+│   │   └── repository/   # Repository async da feature
+│   │       └── account_repository.py # Repository async de contas
+│   └── shared/           # Recursos compartilhados
+│       └── models/       # Modelos SQLAlchemy
+│           └── user.py   # Modelo User
+└── tests/                # Testes async automatizados
 ```
 
 ## Comandos Úteis
@@ -69,7 +71,7 @@ Use este agente para tarefas relacionadas à arquitetura modular async FastAPI.
 **Contexto**: Este projeto usa arquitetura modular async por features com Repository Pattern. Sempre considere:
 - Todas as operações de banco são async/await
 - AsyncSession para database operations
-- Repositories centralizados em pasta dedicada
+- Cada feature tem seu próprio repository async
 - APIs divididas por responsabilidade específica
 - Performance e concorrência
 

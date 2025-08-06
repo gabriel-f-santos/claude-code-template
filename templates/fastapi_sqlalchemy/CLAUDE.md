@@ -6,21 +6,23 @@ Esta versão implementa uma arquitetura modular organizada por features/domínio
 
 ## Estrutura do Projeto
 ```
-src/
-├── core/                    # Configurações e serviços centrais
-│   ├── database.py         # Configuração do banco
-│   ├── settings.py         # Configurações da aplicação
-│   └── auth.py            # Serviços de autenticação
-├── repositories/          # Repository pattern para persistência
-│   └── account_repository.py  # Repository de contas
-├── accounts/              # Feature de contas/usuários
-│   └── api/               # APIs da feature
-│       ├── create_account.py  # Endpoint de criação de conta
-│       ├── login.py          # Endpoint de login
-│       └── account_schemas.py # Schemas Pydantic
-└── shared/                # Recursos compartilhados
-    └── models/            # Modelos SQLAlchemy
-        └── user.py        # Modelo User
+├── alembic/               # Migrações do banco
+├── src/
+│   ├── core/              # Configurações e serviços centrais
+│   │   ├── database.py    # Configuração do banco
+│   │   ├── settings.py    # Configurações da aplicação
+│   │   └── auth.py       # Serviços de autenticação
+│   ├── accounts/         # Feature de contas/usuários
+│   │   ├── api/          # APIs da feature
+│   │   │   ├── create_account.py  # Endpoint de criação
+│   │   │   ├── login.py          # Endpoint de login
+│   │   │   └── account_schemas.py # Schemas Pydantic
+│   │   └── repository/   # Repository da feature
+│   │       └── account_repository.py # Repository de contas
+│   └── shared/           # Recursos compartilhados
+│       └── models/       # Modelos SQLAlchemy
+│           └── user.py   # Modelo User
+└── tests/                # Testes automatizados
 ```
 
 ## Comandos Úteis
@@ -49,7 +51,7 @@ class AccountRepository:
 Cada feature tem sua própria pasta com:
 - APIs divididas por responsabilidade específica
 - Schemas específicos da feature
-- Repositories centralizados em pasta dedicada
+- Repository próprio dentro da feature
 
 ### Dependency Injection
 Cada endpoint recebe suas dependências via FastAPI DI:
@@ -66,7 +68,7 @@ Use este agente para tarefas relacionadas à arquitetura modular FastAPI.
 
 **Contexto**: Este projeto usa arquitetura modular por features com Repository Pattern. Sempre considere:
 - Separação clara entre features/domínios
-- Repositories centralizados em pasta dedicada
+- Cada feature tem seu próprio repository
 - APIs divididas por responsabilidade específica
 - Dependency injection para testabilidade
 - Schemas centralizados por feature
@@ -132,13 +134,13 @@ Use este agente para design de features e organização modular.
 Para criar uma nova feature, siga esta estrutura:
 ```
 src/
-├── repositories/
-│   └── nova_feature_repository.py  # Repository centralizado
 └── nova_feature/
-    └── api/
-        ├── action1.py
-        ├── action2.py
-        └── nova_feature_schemas.py
+    ├── api/
+    │   ├── action1.py
+    │   ├── action2.py
+    │   └── nova_feature_schemas.py
+    └── repository/
+        └── nova_feature_repository.py
 ```
 
 ## Configurações de Ambiente

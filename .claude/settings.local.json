@@ -5,7 +5,9 @@
       "Bash(python:*)",
       "WebFetch(domain:github.com)",
       "Bash(cp:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(rmdir:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
