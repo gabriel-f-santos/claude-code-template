@@ -1,232 +1,311 @@
-# FastAPI Beanie ODM Modular Template
+# FastAPI Beanie Vibecoding Template
 
-## Arquitetura Modular por Features (MongoDB)
+## 🚀 Arquitetura Otimizada para Vibecoding & Claude Code
 
-Esta versão implementa uma arquitetura modular organizada por features/domínios com Beanie ODM para MongoDB, seguindo os princípios de Clean Architecture e Domain-Driven Design.
+Esta é uma **arquitetura simplificada, modular e altamente escalável** especificamente projetada para:
+- ⚡ **Vibecoding sessions** (desenvolvimento rápido ao vivo)
+- 🤖 **Claude Code subagents** (integração eficiente)
+- 🔄 **Rapid prototyping** (prototipagem rápida)
+- 📺 **Live demonstrations** (demonstrações ao vivo)
 
-## Estrutura do Projeto
+## 🏗️ Estrutura Simplificada
+
 ```
-├── src/
-│   ├── core/              # Configurações e serviços centrais
-│   │   ├── database.py    # Configuração async do MongoDB
-│   │   ├── settings.py    # Configurações da aplicação
-│   │   └── auth.py       # Serviços de autenticação
-│   ├── shared/           # Recursos compartilhados
-│   │   ├── models/       # Modelos Beanie
-│   │   │   └── user.py   # Documento User
-│   │   ├── security.py   # Autenticação e autorização async
-│   │   └── utils.py      # Funções utilitárias para MongoDB
-│   ├── accounts/         # Feature de contas/usuários
-│   │   ├── api/          # APIs async da feature
-│   │   │   ├── create_account.py  # Endpoint async de criação
-│   │   │   ├── login.py          # Endpoint async de login
-│   │   │   └── account_schemas.py # Schemas Pydantic
-│   │   └── repository/   # Repository async da feature
-│   │       └── account_repository.py # Repository async MongoDB
-└── tests/                # Testes async automatizados
+app/
+├── api/                   # 🎯 Endpoints organizados por entidade
+│   ├── __init__.py
+│   └── users.py          # Exemplo: CRUD completo de usuários
+├── core/                  # ⚙️ Configurações e segurança
+│   ├── __init__.py
+│   ├── config.py         # Settings com Pydantic
+│   ├── database.py       # Conexão MongoDB/Beanie
+│   └── security.py       # JWT, hashing, auth
+├── models/                # 📄 Beanie Documents (MongoDB)
+│   ├── __init__.py
+│   └── user.py           # Exemplo: User document
+├── schemas/               # ✅ Pydantic schemas para validação
+│   ├── __init__.py
+│   └── user.py           # UserCreate, UserRead, UserUpdate...
+├── services/              # 💼 Business logic desacoplada
+│   ├── __init__.py
+│   └── user_service.py   # UserService com todos CRUDs
+├── main.py                # 🚀 FastAPI app factory
+└── tests/                 # 🧪 Testes para vibecoding
+    ├── __init__.py
+    └── test_users.py     # Testes prontos para demos
 ```
 
-## Comandos Úteis
-- `python run.py` - Executar servidor de desenvolvimento
-- `pytest tests/test_accounts.py` - Executar testes async
-- `mongosh` - Acessar MongoDB shell
+## ⚡ Comandos Vibecoding
 
-## Patterns Implementados (MongoDB Async)
+```bash
+# 🚀 Start development server
+python run.py
 
-### Beanie Document Pattern
-Modelos baseados em Beanie Document:
+# 📖 API docs (automatic)
+http://localhost:8000/docs
+
+# 🧪 Run tests
+pytest
+
+# 🔄 Install dependencies
+pip install -r requirements.txt
+
+# 💾 Setup environment
+cp .env.example .env
+```
+
+## 🎯 Exemplo Prático: API Users
+
+### 1. Model (Beanie Document)
 ```python
+# app/models/user.py
 from beanie import Document
-from pydantic import EmailStr
+from pydantic import EmailStr, Field
 
 class User(Document):
-    username: str
-    email: EmailStr
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr = Field(..., unique=True)
     hashed_password: str
+    is_active: bool = Field(default=True)
     
     class Settings:
         name = "users"
         indexes = ["email", "username"]
 ```
 
-### Async Repository Pattern
-Repository totalmente async com MongoDB:
+### 2. Schemas (Pydantic Validation)
 ```python
-class AccountRepository:
-    async def create_user(self, username: str, email: str, password: str) -> User:
-        user = User(username=username, email=email, ...)
-        await user.create()
+# app/schemas/user.py
+from pydantic import BaseModel, EmailStr
+
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+
+class UserRead(BaseModel):
+    id: str
+    username: str
+    email: EmailStr
+    is_active: bool
+```
+
+### 3. Service (Business Logic)
+```python
+# app/services/user_service.py
+class UserService:
+    @staticmethod
+    async def create_user(user_data: UserCreate) -> User:
+        # Validations + hashing + create
+        hashed_password = get_password_hash(user_data.password)
+        user = User(username=user_data.username, ...)
+        await user.insert()
         return user
-    
-    async def get_user_by_email(self, email: str) -> Optional[User]:
-        return await User.find_one(User.email == email)
 ```
 
-### MongoDB Queries
-Queries modernas com Beanie:
+### 4. API Routes (FastAPI Router)
 ```python
-# Find one
-user = await User.find_one(User.email == email)
+# app/api/users.py
+from fastapi import APIRouter, status
+from ..schemas.user import UserCreate, UserRead
+from ..services.user_service import UserService
 
-# Find many with pagination
-users = await User.find().skip(skip).limit(limit).to_list()
+router = APIRouter()
 
-# Update document
-await user.update({"$set": {"field": "value"}})
+@router.post("/register", response_model=UserRead, status_code=201)
+async def register_user(user_data: UserCreate):
+    return await UserService.create_user(user_data)
 
-# Complex queries
-users = await User.find({"$or": [{"username": username}, {"email": email}]})
+@router.get("/", response_model=List[UserRead])
+async def get_users():
+    return await UserService.get_users()
 ```
 
-## Prompts Especializados para Claude Code
+## 🤖 Prompts Claude Code para Vibecoding
 
-### Subagent: FastAPI MongoDB Expert
-Use este agente para tarefas relacionadas ao FastAPI com MongoDB.
+### Subagent: FastAPI Vibecoding Expert
+Use este agente para desenvolvimento rápido de APIs.
 
-**Contexto**: Este projeto usa FastAPI com Beanie ODM para MongoDB. Sempre considere:
-- Todas as operações são async/await
-- Modelos baseados em Beanie Document
-- Queries MongoDB nativas com sintaxe Beanie
-- Repository pattern async
-- Índices e performance MongoDB
+**Contexto**: Este projeto usa estrutura simples para vibecoding com FastAPI + Beanie. Sempre considere:
+- Arquitetura modular simples (api, core, models, schemas, services)
+- Beanie ODM para MongoDB (Document-based)
+- Pydantic para validação automática
+- Código limpo e demonstrável
+- Padrões previsíveis para rápida expansão
 
 **Tarefas que este agente pode fazer**:
-- Criar novos Documents Beanie
-- Implementar repositories MongoDB async
+- Criar CRUD completo para novas entidades (5 minutos)
+- Implementar autenticação JWT rápida
+- Adicionar validações e schemas Pydantic
+- Criar testes básicos para demonstrações
+- Configurar novas rotas e endpoints
+
+**Exemplo de prompt**:
+"Como um expert em FastAPI Vibecoding, implemente um CRUD completo para 'posts' incluindo: Beanie model, Pydantic schemas, service com business logic, API routes, e testes básicos. Estrutura deve ser idêntica ao users.py existente."
+
+### Subagent: MongoDB Beanie Expert
+Use este agente para operações de banco de dados.
+
+**Contexto**: Este projeto usa Beanie ODM com MongoDB. Sempre considere:
+- Documents ao invés de tabelas relacionais
+- Índices MongoDB para performance
+- Agregações para queries complexas
+- Async/await em todas operações
+- Validação Pydantic integrada
+
+**Tarefas que este agente pode fazer**:
+- Criar novos Document models
+- Implementar relacionamentos entre documents
 - Otimizar queries e agregações
-- Configurar índices MongoDB
-- Criar operações bulk async
+- Configurar índices apropriados
+- Criar migrations de schema
 
 **Exemplo de prompt**:
-"Como um expert em FastAPI MongoDB, crie uma feature 'posts' completa com Beanie Document, repository async incluindo agregações para estatísticas, e APIs com paginação otimizada."
+"Como um expert em MongoDB Beanie, crie um modelo 'Order' com relacionamento para User, incluindo agregações para estatísticas de vendas, índices otimizados, e queries de busca eficientes."
 
-### Subagent: Beanie ODM Expert
-Use este agente para implementar e otimizar modelos Beanie.
+### Subagent: API Testing Expert
+Use este agente para testes rápidos e demonstráveis.
 
-**Contexto**: Este projeto usa Beanie ODM para MongoDB. Sempre considere:
-- Documents com validação Pydantic
-- Índices MongoDB apropriados
-- Relacionamentos entre Documents
-- Queries e agregações eficientes
+**Contexto**: Este projeto foca em testes simples e demonstráveis. Sempre considere:
+- Testes pytest async
+- Fixtures reutilizáveis
+- Cenários de sucesso e erro
+- Fácil execução durante demos
+- Coverage básico mas eficiente
 
-**Exemplo de prompt**:
-"Como um expert em Beanie ODM, implemente um sistema de Posts com relacionamentos para Users, incluindo agregações para contadores e índices otimizados."
-
-### Subagent: MongoDB Performance Expert
-Use este agente para otimizar performance MongoDB.
-
-**Contexto**: Este projeto prioriza performance MongoDB. Sempre considere:
-- Índices compostos eficientes
-- Agregation pipelines otimizadas
-- Bulk operations para múltiplos documentos
-- Connection pooling MongoDB
+**Tarefas que este agente pode fazer**:
+- Criar testes para novos endpoints
+- Implementar fixtures de dados
+- Testes de integração simples
+- Validação de schemas
+- Mock de serviços externos
 
 **Exemplo de prompt**:
-"Como um expert em performance MongoDB, otimize queries de busca com filtros complexos, implemente agregações eficientes e configure índices apropriados."
+"Como um expert em API Testing, crie uma suíte completa de testes para endpoints de e-commerce incluindo: registro de usuário, login, criação de produtos, e processo de checkout. Testes devem ser demonstráveis e rodar rapidamente."
 
-## Benefícios da Arquitetura MongoDB Modular
+## 🎨 Patterns para Vibecoding
 
-### ✅ Performance NoSQL
-- Operações async não-bloqueantes
-- Queries MongoDB nativas
-- Agregações poderosas
-- Escalabilidade horizontal
-
-### ✅ Flexibilidade
-- Schema flexível com validação Pydantic
-- Documentos aninhados nativos
-- Queries expressivas
-- Fácil evolução de schema
-
-### ✅ Organização Modular
-- Features autocontidas
-- Repository pattern consistente
-- Recursos compartilhados centralizados
-
-### ✅ Developer Experience
-- Beanie ODM intuitivo
-- Async/await nativo
-- Validação automática
-- Tipos Python nativos
-
-## Diferenças do Template SQLAlchemy
-
-### Database
-- **MongoDB** em vez de SQL
-- **Beanie Documents** em vez de SQLAlchemy Models
-- **Motor** para conexões async
-- **Agregações** em vez de JOINs
-
-### Models
-- `Document` base class em vez de `Base`
-- **Índices MongoDB** declarativos
-- **Validação Pydantic** integrada
-- **PydanticObjectId** para IDs
-
-### Queries
-- `find_one()` e `find()` em vez de `select()`
-- **Agregation pipelines** para queries complexas
-- **Filtros MongoDB** nativos
-- **Operações bulk** otimizadas
-
-### Features Específicas MongoDB
-- **Índices compostos** para performance
-- **Text search** nativo
-- **Geospatial queries** suportadas
-- **GridFS** para arquivos grandes
-
-## Configurações de Ambiente
-
-Crie um arquivo `.env` baseado no `.env.example`:
-```
-MONGODB_URL=mongodb://localhost:27017
-DATABASE_NAME=myapp
-SECRET_KEY=sua-chave-secreta-aqui
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-```
-
-## Setup MongoDB Local
-```bash
-# Via Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-
-# Via Docker Compose
-version: '3.8'
-services:
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-volumes:
-  mongodb_data:
-```
-
-## Exemplo de Documento Complexo
-
+### 1. Service Pattern (Business Logic)
 ```python
-from beanie import Document
-from typing import List, Optional
-from datetime import datetime
-
-class Post(Document):
-    title: str
-    content: str
-    author_id: PydanticObjectId
-    tags: List[str] = []
-    views: int = 0
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    class Settings:
-        name = "posts"
-        indexes = [
-            "author_id",
-            "tags",
-            [("title", "text"), ("content", "text")],  # Text search
-            [("created_at", -1)],  # Descendant sort
-        ]
+class EntityService:
+    @staticmethod
+    async def create_entity(data: EntityCreate) -> Entity:
+        # 1. Validations
+        # 2. Business logic
+        # 3. Database operation
+        # 4. Return result
+        
+    @staticmethod
+    async def get_entities() -> List[Entity]:
+        return await Entity.find().to_list()
 ```
 
-Esta arquitetura oferece toda a flexibilidade do MongoDB com a organização e estrutura de uma aplicação enterprise! 🚀
+### 2. Router Pattern (API Endpoints)
+```python
+router = APIRouter()
+
+@router.post("/", response_model=EntityRead, status_code=201)
+async def create_entity(data: EntityCreate):
+    return await EntityService.create_entity(data)
+
+@router.get("/", response_model=List[EntityRead])
+async def get_entities():
+    return await EntityService.get_entities()
+```
+
+### 3. Schema Pattern (Validation)
+```python
+class EntityBase(BaseModel):
+    name: str
+    description: str
+
+class EntityCreate(EntityBase):
+    pass
+
+class EntityRead(EntityBase):
+    id: str
+    created_at: datetime
+```
+
+## 🚀 Vantagens para Vibecoding
+
+### ✅ Rapidez Extrema
+- **5 minutos**: CRUD completo para nova entidade
+- **10 minutos**: Autenticação JWT funcional
+- **15 minutos**: Feature completa com testes
+
+### ✅ Simplicidade Visual
+- Estrutura previsível e intuitiva
+- Código limpo e demonstrável
+- Padrões consistentes em todo projeto
+
+### ✅ Claude Code Friendly
+- Padrões claros para subagents
+- Templates reutilizáveis
+- Arquitetura modular expandível
+
+### ✅ Demo Ready
+- Endpoints funcionais imediatamente
+- Swagger UI automático
+- Testes demonstráveis
+
+## 🎯 Workflow Vibecoding Típico
+
+1. **Defina a entidade** (2 min)
+   ```bash
+   # "Vamos criar um sistema de Posts"
+   touch app/models/post.py
+   touch app/schemas/post.py  
+   touch app/services/post_service.py
+   touch app/api/posts.py
+   ```
+
+2. **Implemente o model** (3 min)
+   ```python
+   class Post(Document):
+       title: str
+       content: str
+       author_id: str
+   ```
+
+3. **Crie os schemas** (2 min)
+   ```python
+   class PostCreate(BaseModel): ...
+   class PostRead(BaseModel): ...
+   ```
+
+4. **Desenvolva o service** (5 min)
+   ```python
+   class PostService:
+       @staticmethod
+       async def create_post(...): ...
+   ```
+
+5. **Exponha a API** (3 min)
+   ```python
+   @router.post("/", response_model=PostRead)
+   async def create_post(...): ...
+   ```
+
+6. **Teste ao vivo** (2 min)
+   ```bash
+   # Acesse http://localhost:8000/docs
+   # Teste endpoints na interface Swagger
+   ```
+
+**Total: 15 minutos para feature completa!** 🎉
+
+## 🤝 Integração com Claude Code
+
+Esta arquitetura foi especificamente projetada para trabalhar perfeitamente com Claude Code subagents:
+
+1. **Estrutura previsível**: Subagents sabem exatamente onde colocar cada código
+2. **Padrões consistentes**: Templates claros para replicação
+3. **Módulos independentes**: Cada feature pode ser desenvolvida isoladamente
+4. **Testes integrados**: Validação automática do código gerado
+
+Use os prompts especializados acima para maximizar a eficiência dos subagents!
+
+---
+
+**🚀 Pronto para vibecoding! Desenvolva APIs rapidamente e impressione sua audiência!**

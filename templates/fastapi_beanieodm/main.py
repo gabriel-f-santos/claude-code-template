@@ -1,29 +1,16 @@
-from fastapi import FastAPI
-from contextlib import asynccontextmanager
+"""
+🚀 FastAPI Beanie Vibecoding Template
 
-from src.core.database import connect_to_mongo, close_mongo_connection, init_db
-from src.accounts.api.create_account import router as create_account_router
-from src.accounts.api.login import router as login_router
+Simple, modular structure perfect for rapid development and live coding sessions!
+"""
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    await connect_to_mongo()
-    await init_db()
-    yield
-    # Shutdown
-    await close_mongo_connection()
+from app.main import app
 
-app = FastAPI(
-    title="FastAPI Beanie ODM Modular Template",
-    description="Template modular async para projetos FastAPI com Beanie ODM e MongoDB",
-    version="1.0.0",
-    lifespan=lifespan
-)
-
-app.include_router(create_account_router)
-app.include_router(login_router)
-
-@app.get("/")
-def read_root():
-    return {"message": "FastAPI Beanie ODM Modular Template funcionando!"}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0", 
+        port=8000,
+        reload=True
+    )
