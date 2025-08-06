@@ -12,8 +12,11 @@ Esta versão implementa uma arquitetura modular organizada por features/domínio
 │   │   ├── database.py    # Configuração async do banco
 │   │   ├── settings.py    # Configurações da aplicação
 │   │   └── auth.py       # Serviços de autenticação
-│   ├── models/           # Modelos SQLAlchemy compartilhados
-│   │   └── user.py       # Modelo User
+│   ├── shared/           # Recursos compartilhados
+│   │   ├── models/       # Modelos SQLAlchemy
+│   │   │   └── user.py   # Modelo User
+│   │   ├── security.py   # Autenticação e autorização async
+│   │   └── utils.py      # Funções utilitárias
 │   ├── accounts/         # Feature de contas/usuários
 │   │   ├── api/          # APIs async da feature
 │   │   │   ├── create_account.py  # Endpoint async de criação

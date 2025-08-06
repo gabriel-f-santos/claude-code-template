@@ -2,7 +2,7 @@ from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from src.models.user import User
+from src.shared.models.user import User
 from src.core.auth import get_password_hash, verify_password
 
 

@@ -23,8 +23,11 @@ Este repositório contém templates base organizados com arquitetura modular por
 │   │   ├── database.py        # Configuração do banco
 │   │   ├── settings.py        # Settings com pydantic-settings
 │   │   └── auth.py           # Autenticação JWT
-│   ├── models/               # Modelos SQLAlchemy compartilhados
-│   │   └── user.py          # Modelo User
+│   ├── shared/               # Recursos compartilhados
+│   │   ├── models/           # Modelos SQLAlchemy
+│   │   │   └── user.py       # Modelo User
+│   │   ├── security.py       # Autenticação e autorização
+│   │   └── utils.py          # Funções utilitárias
 │   ├── {feature_name}/       # Feature de domínio
 │   │   ├── api/              # Endpoints da feature
 │   │   │   ├── {action}.py   # Endpoint específico
@@ -41,6 +44,11 @@ Este repositório contém templates base organizados com arquitetura modular por
 - **Database**: Configuração SQLAlchemy (sync/async)
 - **Settings**: Configurações com pydantic-settings
 - **Auth**: Autenticação JWT com PyJWT
+
+### Shared Resources
+- **Models**: Modelos SQLAlchemy compartilhados (`user.py`)
+- **Security**: Autenticação e autorização (`get_current_user`)
+- **Utils**: Funções utilitárias (paginação, formatação, etc.)
 
 ### Accounts Feature
 - **APIs**:
@@ -107,12 +115,15 @@ class FeatureRepository:
 
 ### Feature Organization
 
-Cada feature é autocontida:
+Cada feature é autocontida com recursos compartilhados:
 
 ```
 src/
-├── models/
-│   └── post.py           # Modelo compartilhado
+├── shared/
+│   ├── models/
+│   │   └── post.py       # Modelo compartilhado
+│   ├── security.py       # Autenticação
+│   └── utils.py         # Utilitários
 └── posts/
     ├── api/
     │   ├── create_post.py
@@ -171,7 +182,7 @@ mkdir -p src/nova_feature/{api,repository}
 
 ### 2. Crie o Modelo (se necessário)
 ```python
-# src/models/nova_item.py
+# src/shared/models/nova_item.py
 from sqlalchemy import Column, Integer, String
 from src.core.database import Base
 
@@ -185,7 +196,7 @@ class NovaItem(Base):
 ### 3. Implemente Repository
 ```python
 # src/nova_feature/repository/nova_feature_repository.py
-from src.models.nova_item import NovaItem
+from src.shared.models.nova_item import NovaItem
 
 class NovaFeatureRepository:
     def __init__(self, session):
