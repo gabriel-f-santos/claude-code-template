@@ -11,8 +11,9 @@ src/
 │   ├── database.py         # Configuração do banco
 │   ├── settings.py         # Configurações da aplicação
 │   └── auth.py            # Serviços de autenticação
+├── repositories/          # Repository pattern para persistência
+│   └── account_repository.py  # Repository de contas
 ├── accounts/              # Feature de contas/usuários
-│   ├── account_repository.py  # Repository pattern para persistência
 │   └── api/               # APIs da feature
 │       ├── create_account.py  # Endpoint de criação de conta
 │       ├── login.py          # Endpoint de login
@@ -46,9 +47,9 @@ class AccountRepository:
 
 ### Feature-based Organization
 Cada feature tem sua própria pasta com:
-- Repository para persistência
-- APIs divididas por responsabilidade
+- APIs divididas por responsabilidade específica
 - Schemas específicos da feature
+- Repositories centralizados em pasta dedicada
 
 ### Dependency Injection
 Cada endpoint recebe suas dependências via FastAPI DI:
@@ -65,7 +66,7 @@ Use este agente para tarefas relacionadas à arquitetura modular FastAPI.
 
 **Contexto**: Este projeto usa arquitetura modular por features com Repository Pattern. Sempre considere:
 - Separação clara entre features/domínios
-- Repository pattern para acesso a dados
+- Repositories centralizados em pasta dedicada
 - APIs divididas por responsabilidade específica
 - Dependency injection para testabilidade
 - Schemas centralizados por feature
@@ -131,8 +132,9 @@ Use este agente para design de features e organização modular.
 Para criar uma nova feature, siga esta estrutura:
 ```
 src/
+├── repositories/
+│   └── nova_feature_repository.py  # Repository centralizado
 └── nova_feature/
-    ├── nova_feature_repository.py
     └── api/
         ├── action1.py
         ├── action2.py

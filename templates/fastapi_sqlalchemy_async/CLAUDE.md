@@ -11,8 +11,9 @@ src/
 │   ├── database.py         # Configuração async do banco
 │   ├── settings.py         # Configurações da aplicação
 │   └── auth.py            # Serviços de autenticação
+├── repositories/          # Repository pattern para persistência
+│   └── account_repository.py  # Repository async de contas
 ├── accounts/              # Feature de contas/usuários
-│   ├── account_repository.py  # Repository pattern async
 │   └── api/               # APIs da feature
 │       ├── create_account.py  # Endpoint async de criação
 │       ├── login.py          # Endpoint async de login
@@ -68,7 +69,7 @@ Use este agente para tarefas relacionadas à arquitetura modular async FastAPI.
 **Contexto**: Este projeto usa arquitetura modular async por features com Repository Pattern. Sempre considere:
 - Todas as operações de banco são async/await
 - AsyncSession para database operations
-- Repository pattern async para acesso a dados
+- Repositories centralizados em pasta dedicada
 - APIs divididas por responsabilidade específica
 - Performance e concorrência
 
