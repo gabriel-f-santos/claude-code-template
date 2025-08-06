@@ -1,8 +1,13 @@
-# Flutter Official Architecture + Feature-First + Riverpod
+# Flutter Clean Architecture + Feature-First + Riverpod + Command Pattern
 
-## 🎯 Arquitetura Baseada na Documentação Oficial Flutter
+## 🎯 Arquitetura Avançada com Patterns Modernos
 
-Este template implementa a **arquitetura oficial Flutter** (https://docs.flutter.dev/app-architecture) com organização **Feature-First** e **Riverpod** moderno com code generation.
+Este template implementa uma **arquitetura Flutter robusta** baseada na documentação oficial + patterns avançados:
+- **Command/Query Pattern** para operações reativas
+- **Result Pattern** para error handling funcional  
+- **UseCase Pattern** para business logic isolada
+- **Feature-First** para escalabilidade
+- **Riverpod + Freezed** para state management moderno
 
 ## 🏗️ Estrutura Feature-First
 
@@ -13,52 +18,151 @@ lib/
 │   ├── theme/                  # Material Design themes
 │   ├── utils/                  # Utilitários compartilhados
 │   ├── widgets/                # Widgets reutilizáveis
-│   └── routing/                # GoRouter + rotas globais
+│   ├── routing/                # GoRouter + rotas globais
+│   └── types/                  # Types compartilhados (Result, Command, etc.)
+│       ├── result.dart         # Result<T> pattern
+│       ├── command.dart        # Command pattern base
+│       └── exceptions.dart     # Custom exceptions
 ├── shared/                     # SHARED LAYER
 │   ├── data/                   # Repositórios/Services compartilhados
 │   │   ├── providers/          # @riverpod providers
 │   │   ├── repositories/       # API clients, storage
-│   │   └── models/             # DTOs compartilhados
+│   │   ├── models/             # DTOs compartilhados
+│   │   └── services/           # HTTP client, storage services
 │   └── domain/                 # Domain models compartilhados
+│       ├── models/             # Entidades base
+│       └── repositories/       # Repository interfaces
 └── features/                   # FEATURES (Feature-First)
     ├── auth/                   # Feature: Authentication
-    ├── booking/                # Feature: Booking  
+    ├── clinicas/               # Feature: Clinics Management
     └── profile/                # Feature: User Profile
         ├── data/               # Data Layer da feature
-        │   ├── models/         # API DTOs
+        │   ├── models/         # API DTOs (Freezed + JsonAnnotation)
         │   ├── providers/      # @riverpod data providers
         │   ├── repositories/   # Repository implementations
-        │   └── services/       # API services
+        │   └── services/       # API services específicos
         ├── domain/             # Domain Layer da feature
         │   ├── models/         # Domain entities (Freezed)
-        │   └── use_cases/      # Business logic (opcional)
+        │   ├── repositories/   # Repository interfaces
+        │   └── use_cases/      # Business logic + validation
         └── presentation/       # UI Layer da feature
-            ├── providers/      # @riverpod ViewModels (Notifiers)
+            ├── commands/       # Command objects para actions
+            ├── providers/      # @riverpod ViewModels (AsyncNotifiers)
             ├── screens/        # Telas da feature
             └── widgets/        # Widgets específicos da feature
 ```
 
-## 🧩 Componentes Arquiteturais
+## 🧩 Patterns Arquiteturais Avançados
 
-### 1. Feature-First Organization
-Cada feature é **autocontida** e independente:
-- ✅ **Scalable**: Adicione features sem impacto
-- ✅ **Team collaboration**: Múltiplos devs em paralelo
-- ✅ **Clear boundaries**: Responsabilidades bem definidas
-- ✅ **Monorepo ready**: Extract features facilmente
+### 1. Result Pattern (Error Handling Funcional)
+```dart
+@freezed
+sealed class Result<T> with _$Result<T> {
+  const factory Result.ok(T value) = Ok<T>;
+  const factory Result.error(Exception error, [StackTrace? stackTrace]) = Error<T>;
+  
+  // Helper methods
+  bool get isOk => this is Ok<T>;
+  bool get isError => this is Error<T>;
+  T? get valueOrNull => isOk ? (this as Ok<T>).value : null;
+  Exception? get errorOrNull => isError ? (this as Error<T>).error : null;
+  
+  // Functional operations
+  Result<U> map<U>(U Function(T) mapper);
+  Future<Result<U>> flatMap<U>(Future<Result<U>> Function(T) mapper);
+  T getOrElse(T Function(Exception) fallback);
+}
+```
 
-### 2. Official Flutter MVVM
-Baseado na documentação oficial Flutter:
-- **Views**: ConsumerWidget (UI pura)
-- **ViewModels**: Riverpod Notifiers (business logic + state)
-- **Repositories**: Single source of truth (SSOT)
-- **Services**: API wrappers (stateless)
+### 2. Command Pattern (Reactive Operations)
+```dart
+@freezed
+sealed class CommandState<T> with _$CommandState<T> {
+  const factory CommandState.idle() = _Idle<T>;
+  const factory CommandState.running() = _Running<T>;
+  const factory CommandState.completed(T data) = _Completed<T>;
+  const factory CommandState.error(Exception error, [StackTrace? stackTrace]) = _Error<T>;
+  
+  bool get isRunning => this is _Running<T>;
+  bool get isCompleted => this is _Completed<T>;
+  bool get hasError => this is _Error<T>;
+}
 
-### 3. Riverpod Modern Stack
-- **@riverpod**: Code generation automática
-- **AsyncNotifier**: Para operações async
-- **Freezed integration**: Estados imutáveis
-- **Fine-grained rebuilds**: Performance otimizada
+abstract class Command<T> {
+  CommandState<T> get state;
+  Future<void> execute();
+  void reset();
+}
+```
+
+### 3. UseCase Pattern (Business Logic Isolada)
+```dart
+abstract class UseCase<TResult, TParams> {
+  Future<Result<TResult>> execute(TParams params);
+}
+
+class GetClinicasUseCase extends UseCase<List<Clinica>, NoParams> {
+  final ClinicasRepository _repository;
+  
+  GetClinicasUseCase(this._repository);
+  
+  @override
+  Future<Result<List<Clinica>>> execute(NoParams params) async {
+    try {
+      // Business logic e validações aqui
+      final result = await _repository.getClinicas();
+      return result.map((clinicas) => 
+        clinicas.where((c) => c.isActive).toList()
+      );
+    } catch (e) {
+      return Result.error(Exception('Failed to get clinicas: $e'));
+    }
+  }
+}
+```
+
+### 4. Feature-First + Clean Architecture
+Cada feature segue Clean Architecture com camadas bem definidas:
+- **Presentation**: Commands + Providers + UI
+- **Domain**: UseCases + Entities + Repository Interfaces  
+- **Data**: Repository Implementations + API Services + DTOs
+
+### 5. Riverpod Advanced Patterns
+```dart
+// Command Provider
+@riverpod
+class DeleteClinicaCommand extends _$DeleteClinicaCommand {
+  @override
+  CommandState<void> build() => const CommandState.idle();
+  
+  Future<void> execute(String id) async {
+    state = const CommandState.running();
+    
+    final useCase = ref.read(deleteClinicaUseCaseProvider);
+    final result = await useCase.execute(DeleteClinicaParams(id));
+    
+    result.fold(
+      onOk: (_) => state = const CommandState.completed(null),
+      onError: (error, stackTrace) => state = CommandState.error(error, stackTrace),
+    );
+  }
+  
+  void reset() => state = const CommandState.idle();
+}
+
+// Query Provider  
+@riverpod
+class ClinicasQuery extends _$ClinicasQuery {
+  @override
+  Future<Result<List<Clinica>>> build() async {
+    final useCase = ref.read(getClinicasUseCaseProvider);
+    return await useCase.execute(const NoParams());
+  }
+  
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+}
 
 ## 🔧 Comandos Úteis
 

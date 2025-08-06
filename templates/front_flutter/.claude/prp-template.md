@@ -4,17 +4,18 @@
 - **Feature Name**: `{FEATURE_NAME}`
 - **Priority**: `{PRIORITY}`
 - **Estimated Time**: `{DURATION}`
-- **Architecture**: Flutter + Riverpod + Feature-First + MVVM + Freezed
+- **Architecture**: Flutter + Clean Architecture + Riverpod + Command Pattern + Result Pattern
 
 ## Purpose
 {FEATURE_DESCRIPTION}
 
 ## Core Principles
-1. **Feature-First Architecture**: Self-contained feature modules
-2. **Riverpod State Management**: Reactive, testable state management
-3. **MVVM Pattern**: Clear separation of concerns
-4. **Freezed Models**: Immutable data classes with code generation
-5. **Material Design 3**: Modern, accessible UI components
+1. **Clean Architecture**: Clear separation between presentation, domain, and data layers
+2. **Command/Query Pattern**: Reactive operations with state tracking
+3. **Result Pattern**: Functional error handling without exceptions
+4. **UseCase Pattern**: Business logic isolation and reusability
+5. **Feature-First**: Self-contained, scalable feature modules
+6. **Riverpod + Freezed**: Modern state management with code generation
 
 ---
 
@@ -85,7 +86,7 @@
 
 ### Current Project Structure
 ```bash
-# Flutter Feature-First project structure
+# Flutter Clean Architecture + Feature-First
 lib/
 ├── core/                              # Core app functionality
 │   ├── constants/
@@ -99,54 +100,75 @@ lib/
 │   │   ├── app_bar_widget.dart
 │   │   ├── loading_widget.dart
 │   │   └── error_widget.dart
+│   ├── types/                        # Shared types and patterns
+│   │   ├── result.dart               # Result<T> pattern
+│   │   ├── command.dart              # Command pattern base
+│   │   ├── use_case.dart             # UseCase base class
+│   │   └── exceptions.dart           # Custom exceptions
 │   └── utils/
 │       ├── extensions.dart           # Dart extensions
 │       ├── validators.dart           # Form validation utilities
 │       └── formatters.dart           # Text formatters
+├── shared/                           # Shared across features
+│   ├── data/                         # Shared data layer
+│   │   ├── providers/                # @riverpod providers
+│   │   ├── repositories/             # API clients, storage
+│   │   ├── models/                   # DTOs compartilhados
+│   │   └── services/                 # HTTP client, storage services
+│   └── domain/                       # Shared domain layer
+│       ├── models/                   # Base entities
+│       └── repositories/             # Repository interfaces
 ├── features/                         # Feature-first organization
-│   └── {feature_name}/              # Feature module
-│       ├── data/
-│       │   ├── models/              # Data models (Freezed)
-│       │   │   └── {entity}.dart    # {Entity} data model
-│       │   ├── providers/           # Data providers (APIs, local storage)
-│       │   │   └── {entity}_provider.dart
-│       │   └── repositories/        # Repository pattern
-│       │       └── {entity}_repository.dart
-│       ├── domain/
-│       │   ├── models/              # Domain models (clean architecture)
+│   └── {feature_name}/              # Feature module (Clean Architecture)
+│       ├── data/                     # Data Layer
+│       │   ├── models/               # API DTOs (Freezed + JsonAnnotation)
+│       │   │   └── {entity}_model.dart
+│       │   ├── providers/            # @riverpod data providers
+│       │   │   └── {entity}_api_provider.dart
+│       │   ├── repositories/         # Repository implementations
+│       │   │   └── {entity}_repository_impl.dart
+│       │   └── services/             # API services específicos
+│       │       └── {entity}_service.dart
+│       ├── domain/                   # Domain Layer
+│       │   ├── models/               # Domain entities (Freezed)
 │       │   │   └── {entity}.dart
-│       │   └── usecases/            # Business logic
-│       │       └── {entity}_usecases.dart
-│       └── presentation/
-│           ├── providers/           # Riverpod providers (state management)
-│           │   ├── {entity}_provider.dart
-│           │   └── {entity}_state_provider.dart
-│           ├── screens/             # Screen widgets
+│       │   ├── repositories/         # Repository interfaces
+│       │   │   └── {entity}_repository.dart
+│       │   └── use_cases/            # Business logic + validation
+│       │       ├── get_{entity}_use_case.dart
+│       │       ├── create_{entity}_use_case.dart
+│       │       └── delete_{entity}_use_case.dart
+│       └── presentation/             # Presentation Layer
+│           ├── commands/             # Command objects para actions
+│           │   ├── create_{entity}_command.dart
+│           │   ├── update_{entity}_command.dart
+│           │   └── delete_{entity}_command.dart
+│           ├── providers/            # @riverpod ViewModels (AsyncNotifiers)
+│           │   ├── {entity}_query.dart      # Query provider
+│           │   └── {entity}_commands.dart   # Commands provider
+│           ├── screens/              # Screen widgets
 │           │   ├── {entity}_list_screen.dart
 │           │   ├── {entity}_detail_screen.dart
 │           │   └── {entity}_form_screen.dart
-│           └── widgets/             # Feature-specific widgets
+│           └── widgets/              # Feature-specific widgets
 │               ├── {entity}_card.dart
 │               ├── {entity}_list_tile.dart
 │               └── {entity}_form.dart
-├── shared/                          # Shared across features
-│   ├── providers/                   # Global providers
-│   │   ├── auth_provider.dart
-│   │   └── app_state_provider.dart
-│   ├── widgets/                     # Shared UI components
-│   └── utils/                       # Shared utilities
 ├── main.dart                        # App entry point
 └── app.dart                         # App widget with providers
 ```
 
 ### Technology Stack Context
 ```yaml
-# Flutter Stack Specifics
+# Flutter Clean Architecture Stack
 Framework: Flutter 3.16+ (stable channel)
 Language: Dart 3.2+
-State Management: Riverpod 2.4+ (flutter_riverpod)
-Code Generation: Freezed + json_annotation
-HTTP Client: Dio 5.3+ with interceptors
+Architecture: Clean Architecture + Feature-First
+State Management: Riverpod 2.4+ (flutter_riverpod) with code generation
+Code Generation: Freezed + json_annotation + riverpod_generator
+HTTP Client: Dio 5.3+ with interceptors and Result pattern
+Error Handling: Result<T> pattern (functional programming)
+Business Logic: UseCase pattern with dependency injection
 Local Storage: SharedPreferences + Hive (if needed)
 Navigation: Go Router 12.0+ (declarative routing)
 Testing: Flutter Test + Mockito + Integration Test
@@ -158,13 +180,71 @@ Platform: iOS, Android, Web support
 
 ## Implementation Blueprint
 
-### Domain Model (Freezed)
+### Core Types (Result & Command)
 ```dart
-// features/{feature}/data/models/{entity}.dart
+// core/types/result.dart
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'result.freezed.dart';
+
+@freezed
+sealed class Result<T> with _$Result<T> {
+  const factory Result.ok(T value) = Ok<T>;
+  const factory Result.error(Exception error, [StackTrace? stackTrace]) = Error<T>;
+  
+  // Helper methods
+  bool get isOk => this is Ok<T>;
+  bool get isError => this is Error<T>;
+  T? get valueOrNull => isOk ? (this as Ok<T>).value : null;
+  Exception? get errorOrNull => isError ? (this as Error<T>).error : null;
+  
+  // Functional operations
+  Result<U> map<U>(U Function(T) mapper) {
+    return switch (this) {
+      Ok(:final value) => Result.ok(mapper(value)),
+      Error(:final error, :final stackTrace) => Result.error(error, stackTrace),
+    };
+  }
+  
+  Future<Result<U>> flatMap<U>(Future<Result<U>> Function(T) mapper) async {
+    return switch (this) {
+      Ok(:final value) => await mapper(value),
+      Error(:final error, :final stackTrace) => Result.error(error, stackTrace),
+    };
+  }
+  
+  T getOrElse(T Function(Exception) fallback) {
+    return switch (this) {
+      Ok(:final value) => value,
+      Error(:final error) => fallback(error),
+    };
+  }
+}
+
+// core/types/command.dart
+@freezed
+sealed class CommandState<T> with _$CommandState<T> {
+  const factory CommandState.idle() = _Idle<T>;
+  const factory CommandState.running() = _Running<T>;
+  const factory CommandState.completed(T data) = _Completed<T>;
+  const factory CommandState.error(Exception error, [StackTrace? stackTrace]) = _Error<T>;
+  
+  bool get isRunning => this is _Running<T>;
+  bool get isCompleted => this is _Completed<T>;
+  bool get hasError => this is _Error<T>;
+  T? get data => switch (this) {
+    _Completed(:final data) => data,
+    _ => null,
+  };
+}
+```
+
+### Domain Entity (Clean Architecture)
+```dart
+// features/{feature}/domain/models/{entity}.dart
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part '{entity}.freezed.dart';
-part '{entity}.g.dart';
 
 @freezed
 class {Entity} with _${Entity} {
@@ -173,266 +253,398 @@ class {Entity} with _${Entity} {
     required String name,
     String? description,
     @Default(true) bool isActive,
-    @JsonKey(name: 'created_at') required DateTime createdAt,
-    @JsonKey(name: 'updated_at') DateTime? updatedAt,
+    required DateTime createdAt,
+    DateTime? updatedAt,
   }) = _{Entity};
-
-  factory {Entity}.fromJson(Map<String, dynamic> json) =>
-      _${Entity}FromJson(json);
+  
+  // Business methods can be added here
+  const {Entity}._();
+  
+  bool get canBeEdited => isActive && DateTime.now().difference(createdAt).inDays < 30;
+  String get displayName => name.trim().isEmpty ? 'Unnamed {Entity}' : name;
 }
 
 @freezed
-class {Entity}Create with _${Entity}Create {
-  const factory {Entity}Create({
+class {Entity}Params with _${Entity}Params {
+  const factory {Entity}Params({
     required String name,
     String? description,
     @Default(true) bool isActive,
-  }) = _{Entity}Create;
-
-  factory {Entity}Create.fromJson(Map<String, dynamic> json) =>
-      _${Entity}CreateFromJson(json);
-}
-
-@freezed
-class {Entity}Update with _${Entity}Update {
-  const factory {Entity}Update({
-    String? name,
-    String? description,
-    bool? isActive,
-  }) = _{Entity}Update;
-
-  factory {Entity}Update.fromJson(Map<String, dynamic> json) =>
-      _${Entity}UpdateFromJson(json);
+  }) = _{Entity}Params;
 }
 ```
 
-### Repository (Data Layer)
+### Data Model (API DTO)
 ```dart
-// features/{feature}/data/repositories/{entity}_repository.dart
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../models/{entity}.dart';
-import '../providers/{entity}_provider.dart';
+// features/{feature}/data/models/{entity}_model.dart
+import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../domain/models/{entity}.dart';
 
-part '{entity}_repository.g.dart';
+part '{entity}_model.freezed.dart';
+part '{entity}_model.g.dart';
 
-abstract class {Entity}Repository {
-  Future<List<{Entity}>> getAll();
-  Future<{Entity}> getById(String id);
-  Future<{Entity}> create({Entity}Create {entity}Data);
-  Future<{Entity}> update(String id, {Entity}Update {entity}Data);
-  Future<void> delete(String id);
+@freezed
+class {Entity}Model with _${Entity}Model {
+  const factory {Entity}Model({
+    required String id,
+    required String name,
+    String? description,
+    @JsonKey(name: 'is_active') @Default(true) bool isActive,
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
+  }) = _{Entity}Model;
+
+  factory {Entity}Model.fromJson(Map<String, dynamic> json) =>
+      _${Entity}ModelFromJson(json);
+      
+  const {Entity}Model._();
+  
+  // Convert to domain entity
+  {Entity} toDomain() => {Entity}(
+    id: id,
+    name: name,
+    description: description,
+    isActive: isActive,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+  );
+  
+  // Create from domain entity
+  factory {Entity}Model.fromDomain({Entity} entity) => {Entity}Model(
+    id: entity.id,
+    name: entity.name,
+    description: entity.description,
+    isActive: entity.isActive,
+    createdAt: entity.createdAt,
+    updatedAt: entity.updatedAt,
+  );
 }
 
+@freezed
+class Create{Entity}Request with _$Create{Entity}Request {
+  const factory Create{Entity}Request({
+    required String name,
+    String? description,
+    @JsonKey(name: 'is_active') @Default(true) bool isActive,
+  }) = _Create{Entity}Request;
+
+  factory Create{Entity}Request.fromJson(Map<String, dynamic> json) =>
+      _$Create{Entity}RequestFromJson(json);
+      
+  factory Create{Entity}Request.fromParams({Entity}Params params) =>
+      Create{Entity}Request(
+        name: params.name,
+        description: params.description,
+        isActive: params.isActive,
+      );
+}
+```
+
+### Repository Interface & Implementation
+```dart
+// features/{feature}/domain/repositories/{entity}_repository.dart
+import '../../../core/types/result.dart';
+import '../models/{entity}.dart';
+
+abstract class {Entity}Repository {
+  Future<Result<List<{Entity}>>> getAll();
+  Future<Result<{Entity}>> getById(String id);
+  Future<Result<{Entity}>> create({Entity}Params params);
+  Future<Result<{Entity}>> update(String id, {Entity}Params params);
+  Future<Result<void>> delete(String id);
+}
+
+// features/{feature}/data/repositories/{entity}_repository_impl.dart
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/types/result.dart';
+import '../../domain/models/{entity}.dart';
+import '../../domain/repositories/{entity}_repository.dart';
+import '../services/{entity}_service.dart';
+
+part '{entity}_repository_impl.g.dart';
+
 class {Entity}RepositoryImpl implements {Entity}Repository {
-  final {Entity}Provider _provider;
+  final {Entity}Service _service;
 
-  {Entity}RepositoryImpl(this._provider);
+  {Entity}RepositoryImpl(this._service);
 
   @override
-  Future<List<{Entity}>> getAll() async {
+  Future<Result<List<{Entity}>>> getAll() async {
     try {
-      final response = await _provider.getAll();
-      return response.map((json) => {Entity}.fromJson(json)).toList();
+      final models = await _service.getAll();
+      final entities = models.map((model) => model.toDomain()).toList();
+      return Result.ok(entities);
     } catch (e) {
-      throw Exception('Failed to fetch {entities}: $e');
+      return Result.error(Exception('Failed to fetch {entities}: $e'));
     }
   }
 
   @override
-  Future<{Entity}> getById(String id) async {
+  Future<Result<{Entity}>> getById(String id) async {
     try {
-      final response = await _provider.getById(id);
-      return {Entity}.fromJson(response);
+      final model = await _service.getById(id);
+      return Result.ok(model.toDomain());
     } catch (e) {
-      throw Exception('Failed to fetch {entity}: $e');
+      return Result.error(Exception('Failed to fetch {entity}: $e'));
     }
   }
 
   @override
-  Future<{Entity}> create({Entity}Create {entity}Data) async {
+  Future<Result<{Entity}>> create({Entity}Params params) async {
     try {
-      final response = await _provider.create({entity}Data.toJson());
-      return {Entity}.fromJson(response);
+      final request = Create{Entity}Request.fromParams(params);
+      final model = await _service.create(request);
+      return Result.ok(model.toDomain());
     } catch (e) {
-      throw Exception('Failed to create {entity}: $e');
+      return Result.error(Exception('Failed to create {entity}: $e'));
     }
   }
 
   @override
-  Future<{Entity}> update(String id, {Entity}Update {entity}Data) async {
+  Future<Result<{Entity}>> update(String id, {Entity}Params params) async {
     try {
-      final response = await _provider.update(id, {entity}Data.toJson());
-      return {Entity}.fromJson(response);
+      final request = Create{Entity}Request.fromParams(params);
+      final model = await _service.update(id, request);
+      return Result.ok(model.toDomain());
     } catch (e) {
-      throw Exception('Failed to update {entity}: $e');
+      return Result.error(Exception('Failed to update {entity}: $e'));
     }
   }
 
   @override
-  Future<void> delete(String id) async {
+  Future<Result<void>> delete(String id) async {
     try {
-      await _provider.delete(id);
+      await _service.delete(id);
+      return const Result.ok(null);
     } catch (e) {
-      throw Exception('Failed to delete {entity}: $e');
+      return Result.error(Exception('Failed to delete {entity}: $e'));
     }
   }
 }
 
 @riverpod
 {Entity}Repository {entity}Repository({Entity}RepositoryRef ref) {
-  final provider = ref.read({entity}ProviderProvider);
-  return {Entity}RepositoryImpl(provider);
+  final service = ref.read({entity}ServiceProvider);
+  return {Entity}RepositoryImpl(service);
 }
 ```
 
-### Riverpod State Provider
+### UseCase Pattern (Business Logic)
 ```dart
-// features/{feature}/presentation/providers/{entity}_state_provider.dart
+// core/types/use_case.dart
+import 'result.dart';
+
+abstract class UseCase<TResult, TParams> {
+  Future<Result<TResult>> execute(TParams params);
+}
+
+abstract class NoParams {
+  const NoParams();
+}
+
+const noParams = NoParams();
+
+// features/{feature}/domain/use_cases/get_{entities}_use_case.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../data/models/{entity}.dart';
-import '../../data/repositories/{entity}_repository.dart';
+import '../../../core/types/use_case.dart';
+import '../../../core/types/result.dart';
+import '../models/{entity}.dart';
+import '../repositories/{entity}_repository.dart';
+import '../../data/repositories/{entity}_repository_impl.dart';
 
-part '{entity}_state_provider.g.dart';
+part 'get_{entities}_use_case.g.dart';
 
-@freezed
-class {Entity}State with _${Entity}State {
-  const factory {Entity}State({
-    @Default([]) List<{Entity}> {entities},
-    @Default(false) bool isLoading,
-    @Default(false) bool isCreating,
-    @Default(false) bool isUpdating,
-    @Default(false) bool isDeleting,
-    String? error,
-    {Entity}? selected{Entity},
-  }) = _{Entity}State;
+class Get{Entities}UseCase extends UseCase<List<{Entity}>, NoParams> {
+  final {Entity}Repository _repository;
+  
+  Get{Entities}UseCase(this._repository);
+
+  @override
+  Future<Result<List<{Entity}>>> execute(NoParams params) async {
+    try {
+      final result = await _repository.getAll();
+      
+      return result.map((entities) {
+        // Business logic: filter only active entities
+        final activeEntities = entities.where((e) => e.isActive).toList();
+        
+        // Business logic: sort by creation date
+        activeEntities.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        
+        return activeEntities;
+      });
+    } catch (e) {
+      return Result.error(Exception('Failed to get {entities}: $e'));
+    }
+  }
 }
 
 @riverpod
-class {Entity}Notifier extends _${Entity}Notifier {
+Get{Entities}UseCase get{Entities}UseCase(Get{Entities}UseCaseRef ref) {
+  final repository = ref.read({entity}RepositoryProvider);
+  return Get{Entities}UseCase(repository);
+}
+
+// features/{feature}/domain/use_cases/create_{entity}_use_case.dart
+class Create{Entity}UseCase extends UseCase<{Entity}, {Entity}Params> {
+  final {Entity}Repository _repository;
+  
+  Create{Entity}UseCase(this._repository);
+
   @override
-  {Entity}State build() {
-    // Auto-load data on initialization
-    _load{Entities}();
-    return const {Entity}State();
-  }
-
-  Future<void> _load{Entities}() async {
-    if (state.isLoading) return;
-
-    state = state.copyWith(isLoading: true, error: null);
-    
-    try {
-      final repository = ref.read({entity}RepositoryProvider);
-      final {entities} = await repository.getAll();
-      
-      state = state.copyWith(
-        {entities}: {entities},
-        isLoading: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+  Future<Result<{Entity}>> execute({Entity}Params params) async {
+    // Business validations
+    if (params.name.trim().isEmpty) {
+      return Result.error(Exception('{Entity} name cannot be empty'));
     }
-  }
-
-  Future<void> refresh() async {
-    await _load{Entities}();
-  }
-
-  Future<void> create{Entity}({Entity}Create {entity}Data) async {
-    if (state.isCreating) return;
-
-    state = state.copyWith(isCreating: true, error: null);
     
-    try {
-      final repository = ref.read({entity}RepositoryProvider);
-      final new{Entity} = await repository.create({entity}Data);
-      
-      state = state.copyWith(
-        {entities}: [...state.{entities}, new{Entity}],
-        isCreating: false,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isCreating: false,
-        error: e.toString(),
-      );
-      rethrow;
+    if (params.name.length < 2) {
+      return Result.error(Exception('{Entity} name must be at least 2 characters'));
     }
-  }
-
-  Future<void> update{Entity}(String id, {Entity}Update {entity}Data) async {
-    if (state.isUpdating) return;
-
-    state = state.copyWith(isUpdating: true, error: null);
     
-    try {
-      final repository = ref.read({entity}RepositoryProvider);
-      final updated{Entity} = await repository.update(id, {entity}Data);
-      
-      final updated{Entities} = state.{entities}.map((e) {
-        return e.id == id ? updated{Entity} : e;
-      }).toList();
-      
-      state = state.copyWith(
-        {entities}: updated{Entities},
-        isUpdating: false,
-        selected{Entity}: state.selected{Entity}?.id == id ? updated{Entity} : state.selected{Entity},
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isUpdating: false,
-        error: e.toString(),
-      );
-      rethrow;
+    if (params.name.length > 100) {
+      return Result.error(Exception('{Entity} name cannot exceed 100 characters'));
     }
-  }
-
-  Future<void> delete{Entity}(String id) async {
-    if (state.isDeleting) return;
-
-    state = state.copyWith(isDeleting: true, error: null);
     
-    try {
-      final repository = ref.read({entity}RepositoryProvider);
-      await repository.delete(id);
-      
-      final filtered{Entities} = state.{entities}.where((e) => e.id != id).toList();
-      
-      state = state.copyWith(
-        {entities}: filtered{Entities},
-        isDeleting: false,
-        selected{Entity}: state.selected{Entity}?.id == id ? null : state.selected{Entity},
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isDeleting: false,
-        error: e.toString(),
-      );
-      rethrow;
-    }
+    // Create entity
+    return await _repository.create(params);
   }
+}
 
-  void select{Entity}({Entity}? {entity}) {
-    state = state.copyWith(selected{Entity}: {entity});
-  }
-
-  void clearError() {
-    state = state.copyWith(error: null);
-  }
+@riverpod
+Create{Entity}UseCase create{Entity}UseCase(Create{Entity}UseCaseRef ref) {
+  final repository = ref.read({entity}RepositoryProvider);
+  return Create{Entity}UseCase(repository);
 }
 ```
 
-### Main Screen Widget
+### Command & Query Providers (Presentation)
+```dart
+// features/{feature}/presentation/providers/{entity}_query.dart
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/types/result.dart';
+import '../../../core/types/use_case.dart';
+import '../../domain/models/{entity}.dart';
+import '../../domain/use_cases/get_{entities}_use_case.dart';
+
+part '{entity}_query.g.dart';
+
+@riverpod
+class {Entity}Query extends _${Entity}Query {
+  @override
+  Future<Result<List<{Entity}>>> build() async {
+    final useCase = ref.read(get{Entities}UseCaseProvider);
+    return await useCase.execute(noParams);
+  }
+  
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+}
+
+// features/{feature}/presentation/commands/create_{entity}_command.dart
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../../core/types/command.dart';
+import '../../../core/types/result.dart';
+import '../../domain/models/{entity}.dart';
+import '../../domain/use_cases/create_{entity}_use_case.dart';
+import '../providers/{entity}_query.dart';
+
+part 'create_{entity}_command.g.dart';
+
+@riverpod
+class Create{Entity}Command extends _$Create{Entity}Command {
+  @override
+  CommandState<{Entity}> build() => const CommandState.idle();
+  
+  Future<void> execute({Entity}Params params) async {
+    if (state.isRunning) return;
+    
+    state = const CommandState.running();
+    
+    final useCase = ref.read(create{Entity}UseCaseProvider);
+    final result = await useCase.execute(params);
+    
+    switch (result) {
+      case Ok(:final value):
+        state = CommandState.completed(value);
+        // Invalidate query to refresh the list
+        ref.invalidate({entity}QueryProvider);
+        
+      case Error(:final error, :final stackTrace):
+        state = CommandState.error(error, stackTrace);
+    }
+  }
+  
+  void reset() => state = const CommandState.idle();
+}
+
+// features/{feature}/presentation/commands/update_{entity}_command.dart
+@riverpod
+class Update{Entity}Command extends _$Update{Entity}Command {
+  @override
+  CommandState<{Entity}> build() => const CommandState.idle();
+  
+  Future<void> execute(String id, {Entity}Params params) async {
+    if (state.isRunning) return;
+    
+    state = const CommandState.running();
+    
+    final useCase = ref.read(update{Entity}UseCaseProvider);
+    final result = await useCase.execute(Update{Entity}UseCaseParams(id: id, params: params));
+    
+    switch (result) {
+      case Ok(:final value):
+        state = CommandState.completed(value);
+        ref.invalidate({entity}QueryProvider);
+        
+      case Error(:final error, :final stackTrace):
+        state = CommandState.error(error, stackTrace);
+    }
+  }
+  
+  void reset() => state = const CommandState.idle();
+}
+
+// features/{feature}/presentation/commands/delete_{entity}_command.dart
+@riverpod
+class Delete{Entity}Command extends _$Delete{Entity}Command {
+  @override
+  CommandState<void> build() => const CommandState.idle();
+  
+  Future<void> execute(String id) async {
+    if (state.isRunning) return;
+    
+    state = const CommandState.running();
+    
+    final useCase = ref.read(delete{Entity}UseCaseProvider);
+    final result = await useCase.execute(Delete{Entity}UseCaseParams(id: id));
+    
+    switch (result) {
+      case Ok():
+        state = const CommandState.completed(null);
+        ref.invalidate({entity}QueryProvider);
+        
+      case Error(:final error, :final stackTrace):
+        state = CommandState.error(error, stackTrace);
+    }
+  }
+  
+  void reset() => state = const CommandState.idle();
+}
+```
+
+### Screen with Command/Query Pattern
 ```dart
 // features/{feature}/presentation/screens/{entity}_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/{entity}_state_provider.dart';
+import '../../../core/types/result.dart';
+import '../providers/{entity}_query.dart';
+import '../commands/create_{entity}_command.dart';
+import '../commands/delete_{entity}_command.dart';
 import '../widgets/{entity}_card.dart';
 import '../widgets/{entity}_form.dart';
 import '../../../../core/widgets/loading_widget.dart';
@@ -443,7 +655,28 @@ class {Entity}ListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final {entity}State = ref.watch({entity}NotifierProvider);
+    final queryState = ref.watch({entity}QueryProvider);
+    final createCommand = ref.watch(create{Entity}CommandProvider);
+    final deleteCommand = ref.watch(delete{Entity}CommandProvider);
+    
+    // Listen to command completions for feedback
+    ref.listen(create{Entity}CommandProvider, (previous, next) {
+      if (next.isCompleted) {
+        _showSnackBar(context, '{Entity} created successfully');
+        ref.read(create{Entity}CommandProvider.notifier).reset();
+      } else if (next.hasError) {
+        _showErrorSnackBar(context, next.errorOrNull?.toString() ?? 'Failed to create {entity}');
+      }
+    });
+    
+    ref.listen(delete{Entity}CommandProvider, (previous, next) {
+      if (next.isCompleted) {
+        _showSnackBar(context, '{Entity} deleted successfully');
+        ref.read(delete{Entity}CommandProvider.notifier).reset();
+      } else if (next.hasError) {
+        _showErrorSnackBar(context, next.errorOrNull?.toString() ?? 'Failed to delete {entity}');
+      }
+    });
     
     return Scaffold(
       appBar: AppBar(
@@ -451,48 +684,55 @@ class {Entity}ListScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.read({entity}NotifierProvider.notifier).refresh(),
+            onPressed: () => ref.read({entity}QueryProvider.notifier).refresh(),
           ),
         ],
       ),
-      body: _buildBody(context, ref, {entity}State),
+      body: queryState.when(
+        loading: () => const LoadingWidget(),
+        error: (error, stack) => ErrorWidget(
+          message: error.toString(),
+          onRetry: () => ref.read({entity}QueryProvider.notifier).refresh(),
+        ),
+        data: (result) => _buildContent(context, ref, result),
+      ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreate{Entity}Dialog(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Add {Entity}'),
+        onPressed: createCommand.isRunning 
+          ? null 
+          : () => _showCreate{Entity}Dialog(context, ref),
+        icon: createCommand.isRunning 
+          ? const SizedBox(
+              width: 20, 
+              height: 20, 
+              child: CircularProgressIndicator(strokeWidth: 2)
+            )
+          : const Icon(Icons.add),
+        label: Text(createCommand.isRunning ? 'Creating...' : 'Add {Entity}'),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context, WidgetRef ref, {Entity}State state) {
-    if (state.isLoading && state.{entities}.isEmpty) {
-      return const LoadingWidget();
-    }
-
-    if (state.error != null && state.{entities}.isEmpty) {
-      return ErrorWidget(
-        message: state.error!,
-        onRetry: () => ref.read({entity}NotifierProvider.notifier).refresh(),
-      );
-    }
-
-    if (state.{entities}.isEmpty) {
-      return const _EmptyState();
-    }
-
-    return RefreshIndicator(
-      onRefresh: () => ref.read({entity}NotifierProvider.notifier).refresh(),
-      child: _build{Entity}List(context, ref, state),
-    );
+  Widget _buildContent(BuildContext context, WidgetRef ref, Result<List<{Entity}>> result) {
+    return switch (result) {
+      Ok(:final value) when value.isEmpty => const _EmptyState(),
+      Ok(:final value) => RefreshIndicator(
+          onRefresh: () async => ref.read({entity}QueryProvider.notifier).refresh(),
+          child: _build{Entity}List(context, ref, value),
+        ),
+      Error(:final error) => ErrorWidget(
+          message: error.toString(),
+          onRetry: () => ref.read({entity}QueryProvider.notifier).refresh(),
+        ),
+    };
   }
 
-  Widget _build{Entity}List(BuildContext context, WidgetRef ref, {Entity}State state) {
+  Widget _build{Entity}List(BuildContext context, WidgetRef ref, List<{Entity}> {entities}) {
     return ListView.separated(
       padding: const EdgeInsets.all(16.0),
-      itemCount: state.{entities}.length,
+      itemCount: {entities}.length,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final {entity} = state.{entities}[index];
+        final {entity} = {entities}[index];
         return {Entity}Card(
           {entity}: {entity},
           onTap: () => _navigateTo{Entity}Detail(context, {entity}),
@@ -516,8 +756,8 @@ class {Entity}ListScreen extends ConsumerWidget {
         expand: false,
         builder: (context, scrollController) => {Entity}Form(
           scrollController: scrollController,
-          onSubmit: (data) async {
-            await ref.read({entity}NotifierProvider.notifier).create{Entity}(data);
+          onSubmit: (params) async {
+            await ref.read(create{Entity}CommandProvider.notifier).execute(params);
             if (context.mounted) Navigator.of(context).pop();
           },
         ),
@@ -535,8 +775,8 @@ class {Entity}ListScreen extends ConsumerWidget {
         builder: (context, scrollController) => {Entity}Form(
           scrollController: scrollController,
           initial{Entity}: {entity},
-          onSubmit: (data) async {
-            await ref.read({entity}NotifierProvider.notifier).update{Entity}({entity}.id, data);
+          onSubmit: (params) async {
+            await ref.read(update{Entity}CommandProvider.notifier).execute({entity}.id, params);
             if (context.mounted) Navigator.of(context).pop();
           },
         ),
@@ -545,24 +785,52 @@ class {Entity}ListScreen extends ConsumerWidget {
   }
 
   void _showDelete{Entity}Dialog(BuildContext context, WidgetRef ref, {Entity} {entity}) {
+    final deleteCommand = ref.read(delete{Entity}CommandProvider);
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete {Entity}'),
-        content: Text('Are you sure you want to delete "${{entity}.name}"?'),
+        content: Text('Are you sure you want to delete "${{entity}.displayName}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: deleteCommand.isRunning ? null : () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () async {
-              await ref.read({entity}NotifierProvider.notifier).delete{Entity}({entity}.id);
-              if (context.mounted) Navigator.of(context).pop();
-            },
-            child: const Text('Delete'),
+            onPressed: deleteCommand.isRunning 
+              ? null 
+              : () async {
+                  await ref.read(delete{Entity}CommandProvider.notifier).execute({entity}.id);
+                  if (context.mounted) Navigator.of(context).pop();
+                },
+            child: deleteCommand.isRunning 
+              ? const SizedBox(
+                  width: 16, 
+                  height: 16, 
+                  child: CircularProgressIndicator(strokeWidth: 2)
+                )
+              : const Text('Delete'),
           ),
         ],
+      ),
+    );
+  }
+  
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+  
+  void _showErrorSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
       ),
     );
   }
