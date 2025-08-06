@@ -12,6 +12,8 @@ Esta versão implementa uma arquitetura modular organizada por features/domínio
 │   │   ├── database.py    # Configuração async do banco
 │   │   ├── settings.py    # Configurações da aplicação
 │   │   └── auth.py       # Serviços de autenticação
+│   ├── models/           # Modelos SQLAlchemy compartilhados
+│   │   └── user.py       # Modelo User
 │   ├── accounts/         # Feature de contas/usuários
 │   │   ├── api/          # APIs async da feature
 │   │   │   ├── create_account.py  # Endpoint async de criação
@@ -19,9 +21,6 @@ Esta versão implementa uma arquitetura modular organizada por features/domínio
 │   │   │   └── account_schemas.py # Schemas Pydantic
 │   │   └── repository/   # Repository async da feature
 │   │       └── account_repository.py # Repository async de contas
-│   └── shared/           # Recursos compartilhados
-│       └── models/       # Modelos SQLAlchemy
-│           └── user.py   # Modelo User
 └── tests/                # Testes async automatizados
 ```
 

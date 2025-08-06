@@ -2,7 +2,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from src.shared.models.user import User
+from src.models.user import User
 from src.core.auth import get_password_hash, verify_password
 
 

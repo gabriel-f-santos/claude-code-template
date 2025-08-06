@@ -23,14 +23,14 @@ Este repositório contém templates base organizados com arquitetura modular por
 │   │   ├── database.py        # Configuração do banco
 │   │   ├── settings.py        # Settings com pydantic-settings
 │   │   └── auth.py           # Autenticação JWT
+│   ├── models/               # Modelos SQLAlchemy compartilhados
+│   │   └── user.py          # Modelo User
 │   ├── {feature_name}/       # Feature de domínio
 │   │   ├── api/              # Endpoints da feature
 │   │   │   ├── {action}.py   # Endpoint específico
 │   │   │   └── {feature}_schemas.py # Schemas Pydantic
 │   │   └── repository/       # Persistência da feature
 │   │       └── {feature}_repository.py
-│   └── shared/               # Recursos compartilhados
-│       └── models/           # Modelos SQLAlchemy
 └── tests/                    # Testes automatizados
     └── test_{feature}.py
 ```
@@ -110,13 +110,16 @@ class FeatureRepository:
 Cada feature é autocontida:
 
 ```
-src/posts/
-├── api/
-│   ├── create_post.py
-│   ├── list_posts.py
-│   └── post_schemas.py
-└── repository/
-    └── post_repository.py
+src/
+├── models/
+│   └── post.py           # Modelo compartilhado
+└── posts/
+    ├── api/
+    │   ├── create_post.py
+    │   ├── list_posts.py
+    │   └── post_schemas.py
+    └── repository/
+        └── post_repository.py
 ```
 
 ### Dependency Injection
@@ -166,9 +169,24 @@ python run.py
 mkdir -p src/nova_feature/{api,repository}
 ```
 
-### 2. Implemente Repository
+### 2. Crie o Modelo (se necessário)
+```python
+# src/models/nova_item.py
+from sqlalchemy import Column, Integer, String
+from src.core.database import Base
+
+class NovaItem(Base):
+    __tablename__ = "nova_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+```
+
+### 3. Implemente Repository
 ```python
 # src/nova_feature/repository/nova_feature_repository.py
+from src.models.nova_item import NovaItem
+
 class NovaFeatureRepository:
     def __init__(self, session):
         self.session = session
@@ -177,7 +195,7 @@ class NovaFeatureRepository:
         # Implementar lógica
 ```
 
-### 3. Crie APIs
+### 4. Crie APIs
 ```python
 # src/nova_feature/api/create_item.py
 from fastapi import APIRouter
@@ -191,7 +209,7 @@ def create_item(data: Schema, db = Depends(get_db)):
     return repo.create_item(data)
 ```
 
-### 4. Registre no Main
+### 5. Registre no Main
 ```python
 # main.py
 from src.nova_feature.api.create_item import router as nova_feature_router
