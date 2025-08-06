@@ -1,427 +1,252 @@
-# Flutter Clean Architecture Template
+# Flutter Official Architecture + Feature-First + Riverpod
 
-## Arquitetura Modular por Features (Mobile)
+## 🎯 Arquitetura Baseada na Documentação Oficial Flutter
 
-Este template implementa Clean Architecture com Flutter, organizando o código por features/domínios para máxima escalabilidade e manutenibilidade.
+Este template implementa a **arquitetura oficial Flutter** (https://docs.flutter.dev/app-architecture) com organização **Feature-First** e **Riverpod** moderno com code generation.
 
-## Estrutura do Projeto
+## 🏗️ Estrutura Feature-First
+
 ```
 lib/
-├── core/                     # Configurações e serviços centrais
-│   ├── constants/           # Constantes globais da aplicação
-│   │   └── app_constants.dart # URLs, timeouts, chaves de storage
-│   ├── theme/              # Temas e estilos globais
-│   │   └── app_theme.dart  # Material Design themes
-│   ├── utils/              # Utilitários e helpers
-│   │   └── validators.dart # Validações de formulário
-│   └── services/           # Serviços globais
-│       └── navigation_service.dart # Configuração GoRouter
-├── shared/                  # Recursos compartilhados entre features
-│   ├── models/             # Modelos de dados compartilhados
-│   ├── widgets/            # Widgets reutilizáveis
-│   │   ├── loading_widget.dart # Widget de loading
-│   │   └── error_widget.dart   # Widget de erro
-│   └── services/           # Serviços compartilhados
-│       ├── api_service.dart    # Cliente HTTP
-│       └── storage_service.dart # SharedPreferences wrapper
-└── features/               # Features organizadas por domínio
-    └── auth/              # Feature de autenticação
-        ├── data/          # Camada de dados
-        │   ├── models/    # Modelos de dados (DTOs)
-        │   ├── repositories/ # Implementações de repositórios
-        │   └── datasources/  # Fontes de dados (API, local)
-        ├── domain/        # Camada de domínio (regras de negócio)
-        │   ├── entities/  # Entidades de negócio puras
-        │   ├── repositories/ # Contratos de repositórios
-        │   └── usecases/  # Casos de uso da aplicação
-        └── presentation/  # Camada de apresentação (UI)
-            ├── pages/     # Páginas/telas da feature
-            ├── widgets/   # Widgets específicos da feature
-            └── providers/ # State management (Provider/Riverpod)
+├── core/                        # CORE LAYER (Shared)
+│   ├── config/                 # Configurações globais
+│   ├── theme/                  # Material Design themes
+│   ├── utils/                  # Utilitários compartilhados
+│   ├── widgets/                # Widgets reutilizáveis
+│   └── routing/                # GoRouter + rotas globais
+├── shared/                     # SHARED LAYER
+│   ├── data/                   # Repositórios/Services compartilhados
+│   │   ├── providers/          # @riverpod providers
+│   │   ├── repositories/       # API clients, storage
+│   │   └── models/             # DTOs compartilhados
+│   └── domain/                 # Domain models compartilhados
+└── features/                   # FEATURES (Feature-First)
+    ├── auth/                   # Feature: Authentication
+    ├── booking/                # Feature: Booking  
+    └── profile/                # Feature: User Profile
+        ├── data/               # Data Layer da feature
+        │   ├── models/         # API DTOs
+        │   ├── providers/      # @riverpod data providers
+        │   ├── repositories/   # Repository implementations
+        │   └── services/       # API services
+        ├── domain/             # Domain Layer da feature
+        │   ├── models/         # Domain entities (Freezed)
+        │   └── use_cases/      # Business logic (opcional)
+        └── presentation/       # UI Layer da feature
+            ├── providers/      # @riverpod ViewModels (Notifiers)
+            ├── screens/        # Telas da feature
+            └── widgets/        # Widgets específicos da feature
 ```
 
-## Comandos Úteis
-- `flutter run` - Executar app em desenvolvimento
-- `flutter build apk --release` - Build Android para produção
-- `flutter build ios --release` - Build iOS para produção
-- `flutter test` - Executar todos os testes
-- `flutter analyze` - Análise estática de código
-- `flutter clean && flutter pub get` - Limpar e reinstalar dependências
+## 🧩 Componentes Arquiteturais
 
-## Patterns Implementados (Flutter Clean Architecture)
+### 1. Feature-First Organization
+Cada feature é **autocontida** e independente:
+- ✅ **Scalable**: Adicione features sem impacto
+- ✅ **Team collaboration**: Múltiplos devs em paralelo
+- ✅ **Clear boundaries**: Responsabilidades bem definidas
+- ✅ **Monorepo ready**: Extract features facilmente
 
-### Clean Architecture Layers
-Separação clara das responsabilidades:
-```dart
-// Domain Entity (regras de negócio puras)
-class User {
-  final String id;
-  final String username;
-  final String email;
-  
-  const User({required this.id, required this.username, required this.email});
-}
+### 2. Official Flutter MVVM
+Baseado na documentação oficial Flutter:
+- **Views**: ConsumerWidget (UI pura)
+- **ViewModels**: Riverpod Notifiers (business logic + state)
+- **Repositories**: Single source of truth (SSOT)
+- **Services**: API wrappers (stateless)
 
-// Data Model (serialização/deserialização)
-class UserModel extends User {
-  const UserModel({required super.id, required super.username, required super.email});
-  
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'],
-      username: json['username'], 
-      email: json['email'],
-    );
-  }
-}
+### 3. Riverpod Modern Stack
+- **@riverpod**: Code generation automática
+- **AsyncNotifier**: Para operações async
+- **Freezed integration**: Estados imutáveis
+- **Fine-grained rebuilds**: Performance otimizada
+
+## 🔧 Comandos Úteis
+
+```bash
+# Gerar código (primeira vez)
+flutter pub run build_runner build
+
+# Watch mode (regenera automaticamente)
+flutter pub run build_runner watch --delete-conflicting-outputs
+
+# Executar app
+flutter run
+
+# Executar testes
+flutter test
+
+# Análise de código
+flutter analyze
 ```
 
-### Repository Pattern
-Abstração da camada de dados:
-```dart
-// Domain Repository (contrato)
-abstract class AuthRepository {
-  Future<User> login(String email, String password);
-  Future<User> getCurrentUser();
-}
+## 📝 Prompts Especializados para Claude Code
 
-// Data Repository (implementação)
-class AuthRepositoryImpl implements AuthRepository {
-  final ApiService _apiService;
-  final StorageService _storage;
-  
-  AuthRepositoryImpl(this._apiService, this._storage);
-  
-  @override
-  Future<User> login(String email, String password) async {
-    final response = await _apiService.post('/login', body: {
-      'email': email, 
-      'password': password
-    });
-    return UserModel.fromJson(response);
-  }
-}
-```
+### Subagent: Flutter Feature-First Expert
+Use este agente para desenvolvimento de features completas.
 
-### Provider State Management
-Gerenciamento de estado reativo:
-```dart
-class AuthProvider extends ChangeNotifier {
-  User? _user;
-  bool _isLoading = false;
-  
-  User? get user => _user;
-  bool get isLoading => _isLoading;
-  bool get isLoggedIn => _user != null;
-  
-  Future<void> login(String email, String password) async {
-    _isLoading = true;
-    notifyListeners();
-    
-    try {
-      _user = await _repository.login(email, password);
-    } catch (e) {
-      // Handle error
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-}
-```
-
-## Prompts Especializados para Claude Code
-
-### Subagent: Flutter Clean Architecture Expert
-Use este agente para desenvolvimento Flutter com Clean Architecture.
-
-**Contexto**: Este projeto segue Clean Architecture com Flutter. Sempre considere:
-- Separação clara entre Domain, Data e Presentation layers
-- Repository pattern para abstração de dados
-- Provider para state management
-- Dependency injection manual ou com get_it
-- Testes unitários para cada layer
+**Contexto**: Este projeto usa Feature-First + Official Flutter MVVM + Riverpod. Sempre considere:
+- Organização Feature-First autocontida
+- MVVM pattern com Riverpod Notifiers
+- Code generation com @riverpod e Freezed
+- Result pattern para error handling
+- Separation of concerns por layers
 
 **Tarefas que este agente pode fazer**:
-- Implementar novas features completas (domain + data + presentation)
-- Criar repositories e datasources
-- Implementar casos de uso complexos
-- Configurar injeção de dependência
-- Criar widgets reutilizáveis com Provider
+- Criar features completas (data + domain + presentation)
+- Implementar ViewModels com AsyncNotifier
+- Criar repositories com Result pattern
+- Configurar navegação com GoRouter
+- Implementar testes para todas as layers
 
 **Exemplo de prompt**:
-"Como um expert em Flutter Clean Architecture, implemente uma feature completa de 'posts' incluindo domain entities, repository pattern, API integration, e UI com Provider para state management."
+"Como um expert em Flutter Feature-First, implemente uma feature completa de 'tasks' incluindo: domain entities com Freezed, repository com Result pattern, AsyncNotifier ViewModel, e UI com ConsumerWidget seguindo MVVM."
 
-### Subagent: Flutter UI/UX Expert
-Use este agente para implementar interfaces e experiência do usuário.
+### Subagent: Riverpod Code Generation Expert
+Use este agente para implementar state management moderno.
 
-**Contexto**: Este projeto usa Material Design 3 com temas customizados. Sempre considere:
-- Material Design guidelines e componentes
-- Responsive design para diferentes telas
-- Acessibilidade e usabilidade
-- Animações fluidas e microinterações
-- Performance de renderização
+**Contexto**: Este projeto usa Riverpod com code generation (@riverpod). Sempre considere:
+- @riverpod providers para DI automática
+- AsyncNotifier para ViewModels com estado
+- Freezed para estados imutáveis
+- ProviderContainer para testing
+- Fine-grained rebuilds com ref.watch
 
 **Tarefas que este agente pode fazer**:
-- Criar layouts responsivos e acessíveis
-- Implementar animações e transições
-- Otimizar performance de renderização
-- Criar componentes customizados
-- Implementar navegação complexa
+- Criar providers complexos com @riverpod
+- Implementar AsyncNotifiers para ViewModels
+- Configurar dependency injection automática
+- Otimizar performance com fine-grained updates
+- Criar testes com ProviderContainer mocking
 
 **Exemplo de prompt**:
-"Como um expert em Flutter UI/UX, crie uma interface de login moderna com animações suaves, validação em tempo real e suporte a dark/light theme."
+"Como um expert em Riverpod Code Generation, crie um sistema de cache inteligente usando @riverpod providers com invalidação automática, AsyncNotifier para state management, e testes unitários com ProviderContainer."
 
 ### Subagent: Flutter Testing Expert
 Use este agente para implementar testes abrangentes.
 
-**Contexto**: Este projeto prioriza qualidade com testes em todas as layers. Sempre considere:
-- Testes unitários para domain e data layers
-- Widget tests para componentes UI
-- Integration tests para fluxos completos
-- Mocking de dependências externas
-- Coverage de código alto
+**Contexto**: Este projeto prioriza testing com Riverpod + Mocktail. Sempre considere:
+- ProviderContainer para unit testing
+- Mock providers com overrides
+- Widget testing com ConsumerWidget
+- Integration testing com features
+- Test coverage alto
 
 **Tarefas que este agente pode fazer**:
-- Criar suites de testes unitários
-- Implementar widget tests complexos
-- Configurar mocking e fixtures
-- Otimizar performance dos testes
-- Implementar integration tests
+- Criar unit tests para ViewModels
+- Implementar widget tests para screens
+- Configurar mocking com Mocktail
+- Criar integration tests para features completas
+- Otimizar test performance
 
 **Exemplo de prompt**:
-"Como um expert em Flutter Testing, implemente uma suíte completa de testes para a feature de autenticação, incluindo unit tests para repositories, widget tests para UI e integration tests para o fluxo completo."
+"Como um expert em Flutter Testing, implemente uma suíte completa de testes para uma feature de e-commerce, incluindo unit tests para ViewModels com ProviderContainer, widget tests para UI, e integration tests para fluxos de compra."
 
-### Subagent: Flutter State Management Expert
-Use este agente para gerenciamento de estado avançado.
+### Subagent: Flutter Architecture Performance Expert
+Use este agente para otimizar performance e escalabilidade.
 
-**Contexto**: Este projeto usa Provider como base, mas pode integrar outros patterns. Sempre considere:
-- Provider pattern para state management
-- Separation of concerns no state
-- Performance de rebuilds
-- Estado global vs local
-- Persistência de estado
-
-**Tarefas que este agente pode fazer**:
-- Implementar providers complexos
-- Otimizar performance de state updates
-- Integrar outros state managers (Riverpod, Bloc)
-- Implementar state persistence
-- Criar state management patterns customizados
-
-**Exemplo de prompt**:
-"Como um expert em Flutter State Management, refatore o sistema atual para usar Riverpod com code generation, implementando cache inteligente e state persistence."
-
-## Benefícios da Clean Architecture Flutter
-
-### ✅ Testabilidade
-- Testes unitários independentes para cada layer
-- Mocking fácil de dependências externas
-- Cobertura de código alta e confiável
-- Testes rápidos e isolados
-
-### ✅ Manutenibilidade
-- Código organizado por features e responsibilities
-- Baixo acoplamento entre camadas
-- Fácil localização e modificação de código
-- Refatoração segura com testes
-
-### ✅ Escalabilidade
-- Adição de novas features sem impacto
-- Múltiplos desenvolvedores trabalhando em paralelo
-- Reutilização de componentes e serviços
-- Arquitetura preparada para crescimento
-
-### ✅ Performance
+**Contexto**: Este projeto foca em performance com Riverpod + Feature-First. Sempre considere:
+- Fine-grained rebuilds com Riverpod
 - Lazy loading de features
-- State management otimizado
-- Rebuilds mínimos e eficientes
-- Assets e recursos organizados
+- Memory management com dispose automático
+- Code splitting por features
+- Bundle size optimization
 
-## Diferenças de Outros Templates Mobile
+**Tarefas que este agente pode fazer**:
+- Otimizar rebuilds com select e listen
+- Implementar lazy loading avançado
+- Configurar code splitting eficiente
+- Analisar e otimizar bundle size
+- Implementar caching inteligente
 
-### Arquitetura vs MVC/MVP
-- **Clean Architecture** com separação clara de responsabilidades
-- **Repository Pattern** em vez de acesso direto à dados
-- **Use Cases** para regras de negócio complexas
-- **Dependency Inversion** para testabilidade
+**Exemplo de prompt**:
+"Como um expert em Flutter Performance, otimize uma app com 50+ screens para ter startup time <2s, memory usage estável, e rebuilds mínimos usando técnicas avançadas de Riverpod e Feature-First architecture."
 
-### State Management
-- **Provider** com patterns escaláveis
-- **State imutável** para consistência
-- **Listeners otimizados** para performance
-- **Context isolation** para widgets
+## 🎨 Design Patterns Implementados
 
-### Organização
-- **Features modulares** em vez de tipos de arquivos
-- **Domain-driven** organization
-- **Shared resources** centralizados
-- **Testing strategy** integrada
-
-## Setup e Configuração
-
-### Variáveis de Ambiente
-Configure em `lib/core/constants/app_constants.dart`:
+### 1. Result Pattern (Error Handling)
 ```dart
-class AppConstants {
-  static const String baseUrl = 'https://api.myapp.com'; // Sua API
-  static const Duration apiTimeout = Duration(seconds: 30);
-  static const String authTokenKey = 'auth_token';
+@freezed
+sealed class Result<T> with _$Result<T> {
+  const factory Result.success(T data) = Success<T>;
+  const factory Result.error(String message) = Error<T>;
 }
 ```
 
-### Dependências Principais
-```yaml
-dependencies:
-  flutter: sdk
-  provider: ^6.1.1      # State management
-  go_router: ^12.1.3    # Navegação declarativa
-  http: ^1.1.0          # Cliente HTTP
-  shared_preferences: ^2.2.2  # Storage local
-
-dev_dependencies:
-  flutter_test: sdk
-  flutter_lints: ^3.0.0
-```
-
-### Inicialização
+### 2. MVVM com AsyncNotifier
 ```dart
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializar serviços
-  await StorageService.init();
-  
-  runApp(MyApp());
-}
-```
-
-## Exemplo de Feature Completa
-
-### 1. Domain Entity
-```dart
-class Post {
-  final String id;
-  final String title;
-  final String content;
-  final String authorId;
-  final DateTime createdAt;
-  
-  const Post({
-    required this.id,
-    required this.title, 
-    required this.content,
-    required this.authorId,
-    required this.createdAt,
-  });
-}
-```
-
-### 2. Repository Contract
-```dart
-abstract class PostRepository {
-  Future<List<Post>> getPosts();
-  Future<Post> createPost(String title, String content);
-  Future<void> deletePost(String id);
-}
-```
-
-### 3. Data Implementation
-```dart
-class PostRepositoryImpl implements PostRepository {
-  final ApiService _apiService;
-  
-  PostRepositoryImpl(this._apiService);
-  
+@riverpod
+class FeatureViewModel extends _$FeatureViewModel {
   @override
-  Future<List<Post>> getPosts() async {
-    final response = await _apiService.get('/posts');
-    return (response['posts'] as List)
-        .map((json) => PostModel.fromJson(json))
-        .toList();
+  FutureOr<FeatureState> build() => FeatureState.initial();
+  
+  Future<void> loadData() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final data = await ref.read(repositoryProvider).getData();
+      return FeatureState(data: data);
+    });
   }
 }
 ```
 
-### 4. Use Case
+### 3. Repository Pattern com DI
 ```dart
-class GetPostsUseCase {
-  final PostRepository _repository;
-  
-  GetPostsUseCase(this._repository);
-  
-  Future<List<Post>> call() async {
-    return await _repository.getPosts();
-  }
+@riverpod
+FeatureRepository featureRepository(FeatureRepositoryRef ref) {
+  return FeatureRepository(ref.watch(apiClientProvider));
 }
 ```
 
-### 5. Provider
-```dart
-class PostProvider extends ChangeNotifier {
-  final GetPostsUseCase _getPostsUseCase;
-  
-  List<Post> _posts = [];
-  bool _isLoading = false;
-  String? _error;
-  
-  List<Post> get posts => _posts;
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-  
-  PostProvider(this._getPostsUseCase);
-  
-  Future<void> loadPosts() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
-    
-    try {
-      _posts = await _getPostsUseCase();
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-}
+## 🚀 Benefícios vs Outras Arquiteturas
+
+| Vantagem | Nossa Arquitetura | Clean Architecture | BLoC Pattern |
+|----------|------------------|-------------------|--------------|
+| **Learning Curve** | 🟢 Moderada | 🔴 Alta | 🟡 Média |
+| **Boilerplate** | 🟢 Mínimo | 🔴 Alto | 🟡 Médio |
+| **Type Safety** | 🟢 Máxima | 🟡 Boa | 🟡 Boa |
+| **Testing** | 🟢 Simples | 🟡 Complexo | 🟡 Médio |
+| **Performance** | 🟢 Otimizada | 🟡 Boa | 🟢 Boa |
+| **Code Gen** | 🟢 Nativo | ❌ Manual | ❌ Manual |
+| **DI** | 🟢 Automático | 🔴 Manual | 🔴 Manual |
+| **Scalability** | 🟢 Excelente | 🟢 Excelente | 🟡 Limitada |
+
+## ✨ Quick Start
+
+1. **Clone o template**
+```bash
+git clone <repo> my_app
+cd my_app
 ```
 
-### 6. UI Widget
-```dart
-class PostsPage extends StatelessWidget {
-  const PostsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Posts')),
-      body: Consumer<PostProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const LoadingWidget();
-          }
-          
-          if (provider.error != null) {
-            return ErrorDisplayWidget(
-              message: provider.error!,
-              onRetry: () => provider.loadPosts(),
-            );
-          }
-          
-          return ListView.builder(
-            itemCount: provider.posts.length,
-            itemBuilder: (context, index) {
-              final post = provider.posts[index];
-              return PostItem(post: post);
-            },
-          );
-        },
-      ),
-    );
-  }
-}
+2. **Install dependencies**
+```bash
+flutter pub get
 ```
 
-Esta arquitetura oferece uma base sólida para aplicações Flutter empresariais com qualidade, performance e escalabilidade! 🚀📱
+3. **Generate code**
+```bash
+flutter pub run build_runner build
+```
+
+4. **Run app**
+```bash
+flutter run
+```
+
+5. **Create nova feature**
+```bash
+# Criar estrutura de pastas
+mkdir -p lib/features/my_feature/{data/{models,providers,repositories},domain/models,presentation/{providers,screens,widgets}}
+
+# Implementar seguindo os patterns do template
+```
+
+## 🎯 Evolution Path
+
+1. **Start Simple**: Use apenas UI + Data layers
+2. **Add Complexity**: Adicione Domain layer quando necessário
+3. **Scale Features**: Adicione novas features independentemente
+4. **Optimize**: Use performance patterns do Riverpod
+5. **Test Everything**: Mantenha coverage alto
+
+Esta arquitetura cresce com seu projeto! 🚀

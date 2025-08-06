@@ -1,10 +1,10 @@
 # Flutter Official Architecture Template
 
-## Proposta Baseada na Documentação Oficial Flutter
+## 🚀 Feature-First + Official MVVM + Riverpod
 
-Após leitura completa da documentação oficial de arquitetura do Flutter (https://docs.flutter.dev/app-architecture), esta é a proposta seguindo **exatamente** as diretrizes oficiais.
+Baseado na **documentação oficial Flutter** (https://docs.flutter.dev/app-architecture) com **Riverpod** moderno e organização **Feature-First** para máxima escalabilidade.
 
-## 🎯 Arquitetura Oficial Flutter: MVVM + Layered Architecture
+## 🎯 Arquitetura: Official Flutter MVVM + Feature-First + Riverpod
 
 ### Princípios Fundamentais (Flutter Official)
 
@@ -14,163 +14,294 @@ Após leitura completa da documentação oficial de arquitetura do Flutter (http
 4. **UI as a Function of State** - UI reflete o estado atual
 5. **Layered Architecture** - Camadas bem definidas
 
-### Estrutura de Camadas (Oficial)
+### Estrutura Feature-First + Official Flutter
 
 ```
 lib/
-├── ui/                           # UI LAYER
-│   ├── core/                    # Componentes UI compartilhados
-│   │   ├── theme/              # Temas e estilos
-│   │   └── widgets/            # Widgets reutilizáveis
-│   └── <feature>/              # Por feature (booking, profile, etc)
-│       ├── view_model/         # ViewModels (ChangeNotifier)
-│       │   └── feature_view_model.dart
-│       └── widgets/            # Views (StatelessWidget)
-│           └── feature_screen.dart
-├── domain/                      # DOMAIN LAYER (Opcional)
-│   ├── models/                 # Domain Models (immutable)
-│   └── use_cases/              # Use Cases/Interactors
-├── data/                       # DATA LAYER
-│   ├── repositories/           # Source of Truth (SSOT)
-│   │   └── feature_repository.dart
-│   ├── services/               # API/External Services
-│   │   └── feature_service.dart
-│   └── models/                 # Data Models (API DTOs)
-├── config/                     # Configurações da app
-├── utils/                      # Utilitários
-└── routing/                    # Navegação (GoRouter)
+├── core/                        # CORE LAYER (Shared)
+│   ├── config/                 # Configurações globais
+│   ├── theme/                  # Material Design themes
+│   ├── utils/                  # Utilitários compartilhados
+│   ├── widgets/                # Widgets reutilizáveis
+│   └── routing/                # GoRouter + rotas globais
+├── shared/                     # SHARED LAYER
+│   ├── data/                   # Repositórios/Services compartilhados
+│   │   ├── providers/          # @riverpod providers
+│   │   ├── repositories/       # API clients, storage
+│   │   └── models/             # DTOs compartilhados
+│   └── domain/                 # Domain models compartilhados
+└── features/                   # FEATURES (Feature-First)
+    ├── auth/                   # Feature: Authentication
+    │   ├── data/               # Data Layer da feature
+    │   │   ├── models/         # API DTOs da auth
+    │   │   ├── providers/      # @riverpod data providers
+    │   │   ├── repositories/   # AuthRepository
+    │   │   └── services/       # AuthService (API calls)
+    │   ├── domain/             # Domain Layer da feature
+    │   │   ├── models/         # Domain entities
+    │   │   └── use_cases/      # Business logic (opcional)
+    │   └── presentation/       # UI Layer da feature
+    │       ├── providers/      # @riverpod ViewModels (Notifiers)
+    │       ├── screens/        # Telas da feature
+    │       └── widgets/        # Widgets específicos da feature
+    ├── booking/                # Feature: Booking
+    │   ├── data/
+    │   ├── domain/
+    │   └── presentation/
+    └── profile/                # Feature: User Profile
+        ├── data/
+        ├── domain/
+        └── presentation/
 ```
 
-## 🏗️ Componentes Arquiteturais (Oficial Flutter)
+## 🏗️ Componentes com Riverpod + Code Generation
 
-### 1. UI Layer - MVVM Pattern
+### 1. UI Layer - MVVM com Riverpod Notifiers
 
-#### View (StatelessWidget)
+#### View (ConsumerWidget)
 ```dart
-class BookingScreen extends StatelessWidget {
-  final BookingViewModel viewModel;
-  
-  const BookingScreen({required this.viewModel});
+// features/booking/presentation/screens/booking_screen.dart
+class BookingScreen extends ConsumerWidget {
+  const BookingScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(bookingViewModelProvider);
+    final viewModel = ref.read(bookingViewModelProvider.notifier);
+
     return Scaffold(
-      body: ListenableBuilder(
-        listenable: viewModel,
-        builder: (context, child) {
-          if (viewModel.isLoading) return LoadingWidget();
-          if (viewModel.hasError) return ErrorWidget(viewModel.error);
-          
-          return BookingList(bookings: viewModel.bookings);
-        },
-      ),
+      appBar: AppBar(title: const Text('Bookings')),
+      body: switch (state) {
+        AsyncLoading() => const LoadingWidget(),
+        AsyncError(:final error) => ErrorWidget(error.toString()),
+        AsyncData(:final value) => BookingListView(
+            bookings: value.bookings,
+            onRefresh: viewModel.loadBookings,
+          ),
+      },
     );
   }
 }
 ```
 
-#### ViewModel (ChangeNotifier)
+#### ViewModel State (Freezed)
 ```dart
-class BookingViewModel extends ChangeNotifier {
-  final BookingRepository _repository;
-  
-  List<Booking> _bookings = [];
-  bool _isLoading = false;
-  String? _error;
-  
-  // Immutable getters
-  List<Booking> get bookings => List.unmodifiable(_bookings);
-  bool get isLoading => _isLoading;
-  String? get error => _error;
-  
-  BookingViewModel(this._repository);
-  
+// features/booking/presentation/providers/booking_view_model_state.dart
+import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../domain/models/booking.dart';
+
+part 'booking_view_model_state.freezed.dart';
+
+@freezed
+class BookingViewModelState with _$BookingViewModelState {
+  const factory BookingViewModelState({
+    required List<Booking> bookings,
+    required bool isLoading,
+    String? error,
+  }) = _BookingViewModelState;
+
+  factory BookingViewModelState.initial() => const BookingViewModelState(
+    bookings: [],
+    isLoading: false,
+  );
+}
+```
+
+#### ViewModel (Riverpod Notifier + Code Generation)
+```dart
+// features/booking/presentation/providers/booking_view_model.dart
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/providers/booking_repository_provider.dart';
+import '../../domain/models/booking.dart';
+import 'booking_view_model_state.dart';
+
+part 'booking_view_model.g.dart';
+
+@riverpod
+class BookingViewModel extends _$BookingViewModel {
+  @override
+  FutureOr<BookingViewModelState> build() {
+    return BookingViewModelState.initial();
+  }
+
   Future<void> loadBookings() async {
-    _setLoading(true);
+    state = const AsyncLoading();
+    
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(bookingRepositoryProvider);
+      final bookings = await repository.getBookings();
+      
+      return BookingViewModelState(
+        bookings: bookings,
+        isLoading: false,
+      );
+    });
+  }
+
+  Future<void> createBooking(String title, DateTime date) async {
+    final repository = ref.read(bookingRepositoryProvider);
+    await repository.createBooking(title, date);
+    
+    // Reload bookings after creation
+    loadBookings();
+  }
+}
+```
+
+### 2. Data Layer com Riverpod Providers
+
+#### Repository Provider
+```dart
+// features/booking/data/providers/booking_repository_provider.dart
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../repositories/booking_repository.dart';
+import '../../../shared/data/providers/api_client_provider.dart';
+
+part 'booking_repository_provider.g.dart';
+
+@riverpod
+BookingRepository bookingRepository(BookingRepositoryRef ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return BookingRepository(apiClient);
+}
+```
+
+#### Repository (SSOT com Result Pattern)
+```dart
+// features/booking/data/repositories/booking_repository.dart
+import '../../../shared/data/models/result.dart';
+import '../../domain/models/booking.dart';
+import '../models/booking_dto.dart';
+import '../../../shared/data/repositories/api_client.dart';
+
+class BookingRepository {
+  final ApiClient _apiClient;
+  
+  BookingRepository(this._apiClient);
+  
+  Future<Result<List<Booking>>> getBookings() async {
     try {
-      _bookings = await _repository.getBookings();
-      _error = null;
+      final response = await _apiClient.get<List<dynamic>>('/bookings');
+      
+      return response.fold(
+        onSuccess: (data) {
+          final bookings = data
+              .map((json) => BookingDto.fromJson(json as Map<String, dynamic>))
+              .map((dto) => dto.toDomain())
+              .toList();
+          
+          return Result.success(bookings);
+        },
+        onError: (error) => Result.error(error),
+      );
     } catch (e) {
-      _error = e.toString();
-    } finally {
-      _setLoading(false);
+      return Result.error('Failed to load bookings: $e');
     }
   }
   
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
+  Future<Result<void>> createBooking(String title, DateTime date) async {
+    try {
+      final dto = BookingDto(
+        id: '', // Will be set by server
+        title: title,
+        date: date.toIso8601String(),
+        status: 'pending',
+      );
+      
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        '/bookings',
+        body: dto.toJson(),
+      );
+      
+      return response.fold(
+        onSuccess: (_) => const Result.success(null),
+        onError: (error) => Result.error(error),
+      );
+    } catch (e) {
+      return Result.error('Failed to create booking: $e');
+    }
   }
 }
 ```
 
-### 2. Data Layer
-
-#### Repository (Single Source of Truth)
+#### Data Model (DTO)
 ```dart
-class BookingRepository {
-  final BookingService _service;
-  
-  BookingRepository(this._service);
-  
-  Future<List<Booking>> getBookings() async {
-    // 1. Fetch raw data from service
-    final rawBookings = await _service.fetchBookings();
-    
-    // 2. Transform to domain models
-    return rawBookings
-        .map((raw) => Booking.fromApiModel(raw))
-        .toList();
-  }
-  
-  Future<void> createBooking(BookingRequest request) async {
-    await _service.createBooking(request);
-    // Repository handles caching, retry logic, etc.
-  }
+// features/booking/data/models/booking_dto.dart
+import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../domain/models/booking.dart';
+
+part 'booking_dto.freezed.dart';
+part 'booking_dto.g.dart';
+
+@freezed
+class BookingDto with _$BookingDto {
+  const factory BookingDto({
+    required String id,
+    required String title,
+    required String date,
+    required String status,
+  }) = _BookingDto;
+
+  factory BookingDto.fromJson(Map<String, dynamic> json) =>
+      _$BookingDtoFromJson(json);
 }
-```
 
-#### Service (Stateless API Wrapper)
-```dart
-class BookingService {
-  final ApiClient _client;
-  
-  BookingService(this._client);
-  
-  Future<List<BookingApiModel>> fetchBookings() async {
-    final response = await _client.get('/bookings');
-    return (response['data'] as List)
-        .map((json) => BookingApiModel.fromJson(json))
-        .toList();
-  }
-}
-```
-
-### 3. Domain Layer (Opcional - Quando Necessário)
-
-#### Domain Model (Immutable)
-```dart
-@immutable
-class Booking {
-  final String id;
-  final String title;
-  final DateTime date;
-  final BookingStatus status;
-  
-  const Booking({
-    required this.id,
-    required this.title,
-    required this.date,
-    required this.status,
-  });
-  
-  // Factory from API model
-  factory Booking.fromApiModel(BookingApiModel api) {
+extension BookingDtoX on BookingDto {
+  Booking toDomain() {
     return Booking(
-      id: api.id,
-      title: api.name, // Transform field names
-      date: DateTime.parse(api.dateString),
-      status: BookingStatus.fromString(api.status),
+      id: id,
+      title: title,
+      date: DateTime.parse(date),
+      status: BookingStatus.fromString(status),
+    );
+  }
+}
+```
+
+### 3. Domain Layer - Pure Business Logic
+
+#### Domain Entity (Freezed)
+```dart
+// features/booking/domain/models/booking.dart
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'booking.freezed.dart';
+
+@freezed
+class Booking with _$Booking {
+  const factory Booking({
+    required String id,
+    required String title,
+    required DateTime date,
+    required BookingStatus status,
+    required DateTime createdAt,
+  }) = _Booking;
+
+  const Booking._();
+
+  // Business logic methods
+  bool get isActive => status == BookingStatus.active;
+  bool get isPending => status == BookingStatus.pending;
+  bool get isExpired => date.isBefore(DateTime.now());
+  
+  String get formattedDate => '${date.day}/${date.month}/${date.year}';
+  
+  bool canBeCancelled() {
+    return isActive && date.isAfter(DateTime.now().add(Duration(hours: 24)));
+  }
+}
+
+enum BookingStatus {
+  pending,
+  active,
+  cancelled,
+  completed;
+
+  static BookingStatus fromString(String value) {
+    return BookingStatus.values.firstWhere(
+      (status) => status.name == value,
+      orElse: () => BookingStatus.pending,
     );
   }
 }
@@ -356,75 +487,113 @@ class BookingViewModel extends ChangeNotifier {
 }
 ```
 
-## 📦 Dependências Recomendadas (Flutter Official)
+## 📦 Dependências Modernas (Riverpod + Code Generation)
 
 ```yaml
 dependencies:
   flutter:
     sdk: flutter
   
-  # State Management & DI (Official Recommendation)
-  provider: ^6.1.1
+  # State Management & DI (Riverpod Modern Stack)
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.3
   
   # Navigation (Official Recommendation)
   go_router: ^12.1.3
   
   # HTTP Client
-  http: ^1.1.0
+  dio: ^5.4.0  # More powerful than http
   
   # Local Storage
   shared_preferences: ^2.2.2
   
-  # Code Generation (Recommended)
+  # Code Generation & Immutability
   freezed_annotation: ^2.4.1
   json_annotation: ^4.8.1
 
 dev_dependencies:
-  # Testing (Built-in)
+  # Testing
   flutter_test:
     sdk: flutter
   
-  # Mocking (Recommended)
+  # Mocking (Riverpod compatible)
   mocktail: ^1.0.0
   
-  # Code Generation
+  # Code Generation (Riverpod + Freezed)
   build_runner: ^2.4.7
+  riverpod_generator: ^2.3.9
+  riverpod_lint: ^2.3.7
+  custom_lint: ^0.5.7
   freezed: ^2.4.6
   json_serializable: ^6.7.1
+  
+  # Analysis
+  flutter_lints: ^3.0.0
 ```
 
-## 🎯 Diferenças da Clean Architecture "Tradicional"
+## 🚀 Gerando Código
 
-| Aspecto | Flutter Official | Clean Architecture |
-|---------|------------------|-------------------|
-| **Camadas** | UI + Data (+ Domain opcional) | Presentation + Domain + Data |
-| **Pattern** | MVVM com ChangeNotifier | MVP/MVVM/MVI variado |
-| **State** | ChangeNotifier + Provider | Bloc/Cubit/Riverpod/etc |
-| **Navigation** | GoRouter oficial | Qualquer solução |
-| **DI** | Provider package | get_it/injectable/etc |
-| **Complexidade** | Mais simples, pragmática | Mais rígida, verbose |
+Execute após criar providers e modelos:
 
-## 🚀 Benefícios da Arquitetura Oficial
+```bash
+# Gerar código uma vez
+flutter pub run build_runner build
 
-### ✅ Simplicidade
-- Menos boilerplate que Clean Architecture tradicional
-- Foco no que realmente importa para Flutter
-- Documentação oficial extensa
+# Watch mode (regenera automaticamente)
+flutter pub run build_runner watch --delete-conflicting-outputs
+```
 
-### ✅ Performance
-- ChangeNotifier é otimizado para Flutter
-- ListenableBuilder para rebuilds precisos
-- Provider com lazy loading nativo
+## 🎯 Comparação de Arquiteturas
 
-### ✅ Testabilidade
-- Cada camada testável independentemente
-- Mocking simples com mocktail
-- Widget tests integrados
+| Aspecto | **Nossa Arquitetura** | Clean Architecture | Provider + MVVM |
+|---------|----------------------|-------------------|------------------|
+| **Organização** | **Feature-First** | Layer-First | Mixed |
+| **State Management** | **Riverpod + Code Gen** | Bloc/Cubit variado | Provider manual |
+| **Camadas** | UI + Data (+ Domain) | Presentation + Domain + Data | UI + Business |
+| **Pattern** | **MVVM + Riverpod Notifiers** | MVP/MVVM/MVI | MVVM + ChangeNotifier |
+| **DI** | **@riverpod automatic** | get_it/injectable | Provider manual |
+| **Code Gen** | **Riverpod + Freezed** | Opcional | Opcional |
+| **Testing** | **ProviderContainer mocking** | Repository mocking | Widget testing |
+| **Boilerplate** | **Mínimo (code gen)** | Alto | Médio |
+| **Type Safety** | **Maximum (sealed/freezed)** | Depende | Básico |
+| **Performance** | **Optimal (fine-grained)** | Boa | Boa |
+| **Learning Curve** | **Moderada** | Alta | Baixa |
+| **Scalability** | **Excelente** | Excelente | Limitada |
 
-### ✅ Manutenibilidade
-- Estrutura oficial e padronizada
-- Separação clara de responsabilidades
-- Evolution path clara (Domain layer quando necessário)
+## 🚀 Benefícios da Nossa Arquitetura
+
+### ✅ Feature-First Organization
+- **Escalabilidade por features** - Adicione novas features sem impactar outras
+- **Team collaboration** - Múltiplos devs podem trabalhar em paralelo
+- **Code ownership** - Clear boundaries per feature
+- **Monorepo ready** - Easy to extract features as packages
+
+### ✅ Riverpod Modern Stack
+- **Code generation** - Menos boilerplate, mais type safety
+- **Automatic dependency injection** - @riverpod providers
+- **Fine-grained reactivity** - Rebuilds otimizados
+- **Testing made simple** - ProviderContainer mocking
+- **DevTools integration** - Debug state changes visually
+
+### ✅ Type Safety Maximum
+- **Freezed immutable models** - No runtime errors
+- **Sealed classes for states** - Exhaustive pattern matching
+- **Generated code** - Compile-time guarantees
+- **Null safety** - Zero null reference exceptions
+
+### ✅ Developer Experience
+- **Hot reload friendly** - Fast development cycle
+- **IDE support** - Auto-completion and refactoring
+- **Lint rules** - Code quality enforcement
+- **Easy testing** - Unit + Widget + Integration
+- **Documentation** - Self-documenting code with types
+
+### ✅ Performance & Scalability
+- **Lazy providers** - Load only what's needed
+- **Automatic disposal** - Memory leak prevention
+- **Caching built-in** - Avoid unnecessary API calls
+- **Fine-grained updates** - Minimal widget rebuilds
+- **Background execution** - Non-blocking UI
 
 ---
 

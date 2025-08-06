@@ -1,0 +1,14 @@
+targets:
+  $default:
+    builders:
+      # Riverpod code generation
+      riverpod_generator|riverpod_generator:
+        enabled: true
+        
+      # Freezed code generation
+      freezed|freezed:
+        enabled: true
+        
+      # JSON annotation code generation
+      json_serializable|json_serializable:
+        enabled: true
