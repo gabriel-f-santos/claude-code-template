@@ -11,8 +11,8 @@ from alembic import context
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from app.database import Base
-from app.settings import settings
+from src.core.database import Base
+from src.core.settings import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
