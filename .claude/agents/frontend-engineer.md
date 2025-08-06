@@ -41,7 +41,8 @@ Before starting any work:
 # REQUIRED: Always read these files first
 1. /CLAUDE.md - Frontend architecture and patterns
 2. /MULTI_AGENT_PLAN.md - Current feature plan
-3. /PRP/[feature].md - Feature requirements (if available)
+3. /PRPs/[feature]/prp.md - Feature requirements (if available)
+4. /PRPs/[feature]/images/ - Visual design references (CRITICAL for UI)
 ```
 
 ### ✅ **Understand Frontend Stack**
@@ -59,13 +60,23 @@ From the PRP or task description:
 - Data flow and state management
 - API integration points
 
+### ✅ **Analyze Visual Design References**
+From PRPs/[feature]/images/ directory:
+- **Read all design mockups** - Login screens, dashboards, forms
+- **Study component specifications** - Button styles, card layouts, spacing
+- **Understand responsive behavior** - Desktop vs mobile layouts  
+- **Analyze user flow diagrams** - Interaction patterns and navigation
+- **Extract design tokens** - Colors, typography, spacing, shadows
+
 ## 🛠️ Implementation Process
 
-### Phase 1: **Component Design**
-1. **Plan component structure** following project patterns
-2. **Design component hierarchy** and reusability
-3. **Define props and interfaces** (TypeScript projects)
-4. **Plan state management** approach
+### Phase 1: **Visual Analysis & Component Design**
+1. **Analyze visual designs** from PRPs/[feature]/images/
+2. **Extract design requirements** - layouts, colors, spacing, typography
+3. **Plan component structure** following project patterns
+4. **Design component hierarchy** and reusability
+5. **Define props and interfaces** (TypeScript projects)
+6. **Plan state management** approach
 
 ### Phase 2: **Core Implementation**
 1. **Create base components** with proper typing
@@ -198,6 +209,127 @@ describe('FeatureList', () => {
 - [ ] Performance optimized (no unnecessary re-renders)
 - [ ] TypeScript/Dart types properly defined
 - [ ] Code formatting and linting applied
+
+## 🖼️ Visual Design Interpretation
+
+### Reading Design Mockups:
+When analyzing images in PRPs/[feature]/images/:
+
+#### **Desktop Designs** (images/desktop/):
+```typescript
+// Example: Reading login-page.png
+// Extract from visual mockup:
+- Layout structure (header, main, footer)
+- Form positioning and sizing
+- Button styles and states
+- Input field designs
+- Typography hierarchy
+- Color scheme and branding
+- Spacing and padding patterns
+- Shadow and border styles
+
+// Translate to code:
+<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+  <div className="flex items-center justify-center py-12">
+    <Card className="w-full max-w-md shadow-xl">
+      <CardHeader className="space-y-2 text-center">
+        <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+        <p className="text-gray-600">Sign in to your account</p>
+      </CardHeader>
+      // ... implement exactly as shown in mockup
+    </Card>
+  </div>
+</div>
+```
+
+#### **Mobile Designs** (images/mobile/):
+```typescript
+// Example: Reading login-mobile.png  
+// Focus on mobile-specific adjustments:
+- Responsive breakpoints
+- Touch-friendly button sizes
+- Mobile-optimized forms
+- Navigation patterns
+- Screen space utilization
+
+// Translate to responsive code:
+<div className="px-4 sm:px-6 lg:px-8">
+  <Card className="w-full sm:max-w-md mx-auto">
+    // Mobile-first approach based on mockup
+  </Card>
+</div>
+```
+
+#### **Component Specifications** (images/components/):
+```typescript
+// Example: Reading buttons.png, forms.png
+// Extract component variations:
+- Primary/Secondary button styles
+- Button sizes (sm, md, lg)
+- Form field styles and validation states
+- Card component variations
+- Color variants for different states
+
+// Create reusable components matching designs:
+const Button = ({ variant = 'primary', size = 'md', ...props }) => {
+  // Implement exactly as shown in component specs
+}
+```
+
+#### **User Flow Diagrams** (images/flows/):
+```typescript
+// Example: Reading user-journey.png, interaction-flow.png
+// Understand interaction patterns:
+- Page transitions and routing
+- Form submission flows
+- Error handling flows
+- Loading state progressions
+- User feedback patterns
+
+// Implement state management based on flows:
+const useAuthFlow = () => {
+  // State machine following the user flow diagram
+}
+```
+
+### Design Token Extraction:
+
+```typescript
+// Extract from visual designs to create design system:
+const designTokens = {
+  colors: {
+    // From mockup color palette
+    primary: '#3B82F6',    // Extracted from buttons
+    secondary: '#6B7280',  // Extracted from text
+    success: '#10B981',    // Extracted from success states
+    error: '#EF4444',      // Extracted from error states
+  },
+  
+  spacing: {
+    // From mockup spacing measurements
+    xs: '0.25rem',  // 4px - tight spacing
+    sm: '0.5rem',   // 8px - small gaps
+    md: '1rem',     // 16px - standard spacing
+    lg: '1.5rem',   // 24px - section spacing
+    xl: '3rem',     // 48px - large separations
+  },
+  
+  typography: {
+    // From mockup text styles
+    h1: 'text-3xl font-bold',
+    h2: 'text-2xl font-semibold', 
+    body: 'text-base font-normal',
+    caption: 'text-sm text-gray-600',
+  },
+  
+  borderRadius: {
+    // From mockup corner styles
+    sm: '0.25rem',  // 4px - subtle rounding
+    md: '0.5rem',   // 8px - standard cards
+    lg: '1rem',     // 16px - prominent elements
+  }
+}
+```
 
 ## 🔧 Common Implementation Patterns
 

@@ -58,6 +58,45 @@ Complete authentication system including:
   why: Current development plan and coordination
 ```
 
+### Visual References
+```yaml
+# DESIGN REFERENCES - Visual mockups and UI specifications
+- directory: PRPs/user-authentication/images/
+  contents:
+    # Desktop Designs
+    - desktop/login-page.png        # Login form with email/password
+    - desktop/register-page.png     # Registration form with validation
+    - desktop/forgot-password.png   # Password reset request form
+    - desktop/reset-password.png    # New password form with token
+    - desktop/email-verification.png # Email verification success page
+    
+    # Mobile Responsive Designs  
+    - mobile/login-mobile.png       # Mobile-optimized login screen
+    - mobile/register-mobile.png    # Mobile registration form
+    - mobile/auth-flow-mobile.png   # Mobile authentication flow
+    
+    # Component Specifications
+    - components/auth-forms.png     # Form field styles and validation
+    - components/auth-buttons.png   # Primary/secondary button styles  
+    - components/loading-states.png # Loading spinners and skeletons
+    - components/error-states.png   # Error messages and alerts
+    
+    # User Flow Diagrams
+    - flows/registration-flow.png   # Complete registration process
+    - flows/login-flow.png          # Login and authentication flow
+    - flows/password-reset-flow.png # Password reset journey
+    - flows/email-verification-flow.png # Email verification process
+    
+  why: Visual guidance for implementing pixel-perfect authentication UI
+  note: |
+    FrontendEngineer MUST read these images to understand:
+    - Exact form layouts and styling
+    - Button states and interactions  
+    - Mobile responsive behavior
+    - Loading and error state designs
+    - Complete user interaction flows
+```
+
 ### Current Project Structure
 ```bash
 # FastAPI + React project structure
@@ -169,49 +208,139 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 ### Frontend Components
 ```typescript
 // React authentication components with shadcn/ui
+// IMPORTANT: Implement based on designs in PRPs/user-authentication/images/
+
 import { useAuthStore } from '@/store/auth-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
 
-// Registration Form Component
-interface RegisterFormProps {
-  onSuccess?: () => void
-}
-
-export function RegisterForm({ onSuccess }: RegisterFormProps) {
-  const { register, isLoading } = useAuthStore()
-  
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="Enter your email" {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        {/* More form fields */}
-        <Button type="submit" disabled={isLoading} className="w-full">
-          {isLoading ? 'Creating Account...' : 'Create Account'}
-        </Button>
-      </form>
-    </Form>
-  )
-}
-
-// Login Form Component
+// Login Form Component - Based on desktop/login-page.png
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const { login, isLoading } = useAuthStore()
   
-  // Implementation with similar pattern
+  // Layout matches desktop/login-page.png:
+  // - Centered card with shadow
+  // - Welcome back title
+  // - Email and password fields
+  // - Primary action button
+  // - Secondary "Forgot password?" link
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0">
+        <CardHeader className="space-y-2 text-center pb-8">
+          <CardTitle className="text-2xl font-bold text-gray-900">Welcome Back</CardTitle>
+          <p className="text-gray-600">Sign in to your account to continue</p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              {/* Email field - styled per components/auth-forms.png */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700">Email Address</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email" 
+                        placeholder="Enter your email"
+                        className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        {...field} 
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {/* Password field - styled per components/auth-forms.png */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700">Password</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Enter your password"
+                        className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        {...field} 
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {/* Primary button - styled per components/auth-buttons.png */}
+              <Button 
+                type="submit" 
+                disabled={isLoading} 
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+              >
+                {isLoading ? (
+                  // Loading state per components/loading-states.png
+                  <div className="flex items-center gap-2">
+                    <Spinner className="h-4 w-4" />
+                    <span>Signing in...</span>
+                  </div>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+              
+              {/* Forgot password link - styled per desktop/login-page.png */}
+              <div className="text-center">
+                <Link 
+                  to="/auth/forgot-password" 
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
+
+// Registration Form Component - Based on desktop/register-page.png
+export function RegisterForm({ onSuccess }: RegisterFormProps) {
+  const { register, isLoading } = useAuthStore()
+  
+  // Layout matches desktop/register-page.png:
+  // - Similar card layout to login
+  // - "Create Account" title
+  // - Name, email, password, confirm password fields
+  // - Terms checkbox
+  // - Primary "Create Account" button
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl border-0">
+        <CardHeader className="space-y-2 text-center pb-8">
+          <CardTitle className="text-2xl font-bold text-gray-900">Create Account</CardTitle>
+          <p className="text-gray-600">Join us to get started</p>
+        </CardHeader>
+        <CardContent>
+          {/* Form implementation based on register-page.png design */}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Mobile responsive - Based on mobile/login-mobile.png and mobile/register-mobile.png
+// Responsive breakpoints per mobile designs:
+// - Reduced padding on mobile
+// - Full-width cards on small screens  
+// - Touch-friendly button sizes
+// - Mobile-optimized form spacing
 
 // Protected Route Component
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
@@ -300,13 +429,18 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => ({
   - **Quality Gate**: >90% test coverage, <200ms response times
 
 ### Phase 3: Frontend Implementation (Sequential)  
-- [ ] **FrontendEngineer**: Create authentication UI
-  - Registration and login forms with shadcn/ui
-  - Email verification flow
-  - Password reset flow
+- [ ] **FrontendEngineer**: Create authentication UI following visual designs
+  - **CRITICAL**: Read all images in PRPs/user-authentication/images/ first
+  - Study desktop designs (login-page.png, register-page.png, etc.)
+  - Analyze mobile responsive designs (login-mobile.png, etc.)
+  - Extract styling from component specifications (auth-forms.png, auth-buttons.png)
+  - Understand user flows from flow diagrams (registration-flow.png, etc.)
+  - Registration and login forms with shadcn/ui matching designs exactly
+  - Email verification flow per email-verification-flow.png
+  - Password reset flow per password-reset-flow.png  
   - Protected route handling
   - Auth state management with Zustand
-  - **Quality Gate**: Responsive design, accessibility, loading states
+  - **Quality Gate**: Pixel-perfect match to designs, responsive design, accessibility, loading states
 
 ### Phase 4: Quality & Integration (Sequential)
 - [ ] **QAEngineer**: Comprehensive testing

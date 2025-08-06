@@ -239,25 +239,37 @@ Follow the exact patterns defined in CLAUDE.md for [backend_framework]."
 ```bash
 /agent frontend-engineer "Execute frontend tasks for [feature_name]:
 
-CONTEXT: Read the PRP at [prp_path] and CLAUDE.md for architecture patterns.
+CONTEXT: 
+- Read the PRP at [prp_path] and CLAUDE.md for architecture patterns
+- CRITICAL: Read ALL visual design references in [prp_path]/images/
+- Study desktop mockups, mobile designs, component specs, and user flows
+
+VISUAL DESIGN ANALYSIS REQUIRED:
+- Desktop designs: [prp_path]/images/desktop/
+- Mobile designs: [prp_path]/images/mobile/  
+- Component specs: [prp_path]/images/components/
+- User flows: [prp_path]/images/flows/
 
 TASKS FROM PRP:
 [extracted_frontend_tasks]
 
-UI COMPONENTS:
+UI COMPONENTS (implement per visual designs):
 [extracted_components]
 
 QUALITY GATES:
 [extracted_frontend_quality_gates]
+- Pixel-perfect match to design mockups
+- Responsive behavior matching mobile designs
 
 DELIVERABLES:
-- UI components using [ui_library]
+- UI components using [ui_library] matching design specifications exactly
 - State management with [state_management]
 - API integration with error handling
-- Responsive design
+- Responsive design per mobile mockups
 - Accessibility compliance
+- Loading/error states per component specifications
 
-Follow the exact patterns defined in CLAUDE.md for [frontend_framework]."
+Follow the exact patterns defined in CLAUDE.md for [frontend_framework] AND implement the exact visual designs from the images directory."
 ```
 
 ## 📊 Progress Monitoring

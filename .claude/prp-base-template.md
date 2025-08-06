@@ -47,6 +47,20 @@
   why: Current development plan and coordination
 ```
 
+### Visual References
+```yaml
+# DESIGN REFERENCES - Visual mockups and UI specifications
+- directory: PRPs/[feature-name]/images/
+  contents:
+    - login-screen.png          # Login page mockup/wireframe
+    - dashboard-layout.png      # Main dashboard design
+    - mobile-view.png          # Mobile responsive design
+    - component-specs.png      # Component detailed specifications
+    - user-flow.png           # User interaction flow diagram
+  why: Visual guidance for accurate UI implementation
+  note: FrontendEngineer MUST read these images to understand design requirements
+```
+
 ### Current Project Structure
 ```bash
 [AUTO-GENERATED: Read current project structure]
@@ -54,7 +68,30 @@
 
 ### Desired Feature Structure
 ```bash
-[AUTO-GENERATED: Based on CLAUDE.md patterns]
+# Feature directory structure with visual references
+PRPs/[feature-name]/
+├── prp.md                      # Main PRP document
+├── backend/                    # Backend specifications
+│   ├── api-spec.md            # API endpoints and contracts
+│   └── database-schema.md     # Database models and relations
+├── frontend/                   # Frontend specifications  
+│   ├── components.md          # Component specifications
+│   └── state-management.md    # State and data flow
+└── images/                     # Visual design references
+    ├── desktop/               # Desktop designs
+    │   ├── login-page.png     # Login screen mockup
+    │   ├── dashboard.png      # Main dashboard layout
+    │   └── forms.png          # Form designs
+    ├── mobile/                # Mobile responsive designs
+    │   ├── login-mobile.png   # Mobile login screen
+    │   └── dashboard-mobile.png # Mobile dashboard
+    ├── components/            # Component-specific designs
+    │   ├── buttons.png        # Button variations
+    │   ├── cards.png          # Card component designs
+    │   └── forms.png          # Form field designs
+    └── flows/                 # User flow diagrams
+        ├── user-journey.png   # Complete user journey
+        └── interaction-flow.png # Detailed interactions
 ```
 
 ### Technology Stack Context

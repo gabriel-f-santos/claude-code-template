@@ -42,8 +42,8 @@ You are a **PRP Generator** specialized in creating comprehensive Product Requir
 
 ### Step 4: **Create Feature Structure**
 ```bash
-# Create feature directory structure
-mkdir -p PRPs/[feature-name]
+# Create comprehensive feature directory structure
+mkdir -p PRPs/[feature-name]/{backend,frontend,images/{desktop,mobile,components,flows}}
 ```
 
 ### Step 5: **Generate PRP Document**
@@ -118,12 +118,29 @@ def assess_complexity(description, feature_type):
 ### For Each Feature, Generate:
 ```bash
 PRPs/[feature-name]/
-├── prp.md                 # Main PRP document
-├── backend.md             # Backend-specific details (if applicable)
-├── frontend.md            # Frontend-specific details (if applicable)
-├── database.md            # Database schema and models (if applicable)
-├── api-contract.md        # API endpoint specifications (if applicable)
-└── test-plan.md           # Comprehensive testing strategy
+├── prp.md                      # Main PRP document
+├── backend/                    # Backend specifications
+│   ├── api-spec.md            # API endpoints and contracts
+│   └── database-schema.md     # Database models and relations
+├── frontend/                   # Frontend specifications  
+│   ├── components.md          # Component specifications
+│   └── state-management.md    # State and data flow
+├── images/                     # Visual design references (CRITICAL)
+│   ├── desktop/               # Desktop mockups
+│   │   ├── login-page.png     # Login screen design
+│   │   ├── dashboard.png      # Main dashboard layout
+│   │   └── [feature]-page.png # Feature-specific screens
+│   ├── mobile/                # Mobile responsive designs
+│   │   ├── login-mobile.png   # Mobile login screen
+│   │   └── [feature]-mobile.png # Mobile feature screens
+│   ├── components/            # Component-specific designs
+│   │   ├── buttons.png        # Button variations
+│   │   ├── forms.png          # Form designs
+│   │   └── cards.png          # Card component styles
+│   └── flows/                 # User flow diagrams
+│       ├── user-journey.png   # Complete user journey
+│       └── interaction-flow.png # Detailed UI interactions
+└── test-plan.md               # Comprehensive testing strategy
 ```
 
 ## 🎯 Technology-Specific PRP Templates
