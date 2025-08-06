@@ -1,19 +1,16 @@
-from fastapi import FastAPI
-from src.core.database import engine, Base
-from src.accounts.api.create_account import router as create_account_router
-from src.accounts.api.login import router as login_router
+"""
+🚀 FastAPI SQLAlchemy Vibecoding Template
 
-Base.metadata.create_all(bind=engine)
+Simple, modular structure perfect for rapid development and live coding sessions!
+"""
 
-app = FastAPI(
-    title="FastAPI SQLAlchemy Modular Template",
-    description="Template modular para projetos FastAPI com SQLAlchemy",
-    version="1.0.0"
-)
+from app.main import app
 
-app.include_router(create_account_router)
-app.include_router(login_router)
-
-@app.get("/")
-def read_root():
-    return {"message": "FastAPI SQLAlchemy Modular Template funcionando!"}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0", 
+        port=8000,
+        reload=True
+    )
