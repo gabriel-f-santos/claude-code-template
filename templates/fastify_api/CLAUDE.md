@@ -322,4 +322,300 @@ Start coding and see results in seconds, not hours! 🚀
 ✅ **Development Tools** - Hot reload, database GUI  
 ✅ **Production Ready** - Security, logging, CORS
 
+## 🎯 Feature Development Guide
+
+### 📋 **Step-by-Step Process for Adding New Features**
+
+Siga este processo rigorosamente para manter a consistência arquitetural vibecoding:
+
+#### **1. 📁 Create Feature Structure**
+```bash
+# Exemplo: Adicionando feature "Orders"
+mkdir -p src/{routes,controllers,services,schemas}
+
+# Os arquivos específicos da feature
+touch src/routes/orders.routes.js
+touch src/controllers/orders.controller.js  
+touch src/services/orders.service.js
+touch src/schemas/orders.schema.js
+touch tests/orders.test.js
+```
+
+#### **2. 📊 Database Model (Prisma)**
+```bash
+# 1. Update Prisma schema
+# Adicione o modelo no prisma/schema.prisma
+
+# 2. Generate and push changes
+npm run db:generate
+npm run db:push
+```
+
+#### **3. 💾 Service Layer (Business Logic)**
+```bash
+# Implemente primeiro o service com toda a lógica de negócios
+# src/services/orders.service.js
+```
+
+#### **4. 🎨 API Layer (Routes & Controllers)**
+```bash
+# 1. Create JSON Schema validation
+# 2. Implement controller methods  
+# 3. Define route endpoints
+# 4. Register routes in main app
+```
+
+#### **5. 🧪 Testing**
+```bash
+# Create comprehensive tests
+touch tests/orders.test.js
+npm run test
+```
+
+### 🤖 **Claude Code Prompt Templates**
+
+#### **📝 Complete CRUD Feature Prompt**
+```
+Você é um especialista em Fastify Vibecoding API development.
+
+TAREFA: Criar a feature "Orders" completa seguindo nossa arquitetura vibecoding.
+
+ARQUITETURA OBRIGATÓRIA:
+src/
+├── schemas/orders.schema.js (JSON Schema + Swagger docs)
+├── services/orders.service.js (business logic + Prisma)
+├── controllers/orders.controller.js (HTTP layer)
+├── routes/orders.routes.js (route definitions)
+└── tests/orders.test.js (comprehensive tests)
+
+REQUISITOS TÉCNICOS:
+✅ JSON Schema validation para todos endpoints
+✅ Swagger documentation automática
+✅ Error handling com classes customizadas
+✅ Prisma ORM para database operations
+✅ Paginação para listagens
+✅ Testes com 100% de cobertura dos endpoints
+✅ Async/await em todas operações
+
+FUNCIONALIDADES:
+- GET /orders (list with pagination, filters)
+- GET /orders/:id (get by ID)
+- POST /orders (create with validation)
+- PUT /orders/:id (update)
+- DELETE /orders/:id (delete)
+- GET /orders/user/:userId (orders by user)
+
+PRISMA MODEL NECESSÁRIO:
+```prisma
+model Order {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  totalAmount Float
+  status      String   @default("pending")
+  items       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id])
+  @@map("orders")
+}
+```
+
+PADRÕES VIBECODING:
+- Service class com métodos estáticos
+- Controller com asyncHandler wrapper
+- Routes com schema validation
+- Error handling consistente
+- Testes usando app.inject()
+
+ENTREGUE: Código completo de todos os arquivos + update do Prisma schema.
+```
+
+#### **📱 Simple Feature Prompt**
+```
+TAREFA: Criar feature "Categories" simples (apenas CRUD básico).
+
+ARQUITETURA MÍNIMA:
+- src/schemas/categories.schema.js
+- src/services/categories.service.js  
+- src/controllers/categories.controller.js
+- src/routes/categories.routes.js
+- tests/categories.test.js
+
+FUNCIONALIDADES:
+- CRUD básico (Create, Read, Update, Delete)
+- Validação simples
+- Testes essenciais
+
+NÃO PRECISA: Relacionamentos complexos, business logic avançada.
+```
+
+#### **🔄 Extend Existing Feature Prompt**
+```
+TAREFA: Adicionar "Comments" à feature Users existente.
+
+MODIFICAÇÕES NECESSÁRIAS:
+
+1. prisma/schema.prisma
+   - Adicionar model Comment com userId foreign key
+
+2. src/services/users.service.js
+   - Adicionar getUserComments(userId)
+   - Adicionar addComment(userId, commentData)
+
+3. src/controllers/users.controller.js
+   - Adicionar endpoints para comments
+
+4. src/routes/users.routes.js
+   - GET /users/:id/comments
+   - POST /users/:id/comments
+
+5. src/schemas/users.schema.js
+   - Adicionar comment schemas
+
+6. tests/users.test.js
+   - Adicionar testes para comment endpoints
+
+MANTENHA: Arquitetura existente, apenas estenda funcionalidades.
+```
+
+### 🏗️ **Architecture Decision Tree**
+
+```
+Nova Feature?
+├── Precisa de database? 
+│   ├── SIM → Criar Prisma model + migration
+│   └── NÃO → Apenas service/controller
+├── É extensão de feature existente?
+│   ├── SIM → Adicionar aos arquivos existentes
+│   └── NÃO → Criar nova estrutura completa
+├── Complexidade alta?
+│   ├── SIM → Adicionar validação + business logic
+│   └── NÃO → CRUD simples
+├── Precisa de autenticação?
+│   ├── SIM → Adicionar preHandler: [fastify.authenticate]
+│   └── NÃO → Rotas públicas
+```
+
+### 📐 **Architectural Rules (NEVER BREAK)**
+
+#### **✅ ALWAYS DO:**
+1. **Layer separation**: Routes → Controllers → Services → Database
+2. **JSON Schema validation**: Todo endpoint deve ter schema
+3. **Error handling**: Use asyncHandler em controllers
+4. **Consistent responses**: Mesmo formato para todos endpoints
+5. **Prisma transactions**: Para operações complexas
+6. **Comprehensive tests**: Teste todos cenários
+7. **Swagger docs**: Documentação automática
+
+#### **❌ NEVER DO:**
+1. **Direct DB in controllers**: Use sempre services
+2. **Skip validation**: Todo input deve ser validado
+3. **Inconsistent naming**: Siga os padrões existentes
+4. **Missing error handling**: Trate todos os casos
+5. **Skip tests**: Toda feature precisa de testes
+6. **Hardcoded values**: Use sempre configurações
+
+### 🔄 **Reasoning Process for Features**
+
+#### **Before Adding Any Feature:**
+1. **Define endpoints**: Quais rotas serão necessárias?
+2. **Design data model**: Como será armazenado no DB?
+3. **Plan validation**: Que dados precisam ser validados?
+4. **Consider auth**: Precisa de autenticação/autorização?
+5. **Think about relationships**: Conecta com outras features?
+
+#### **During Development:**
+1. **Start with schema**: Prisma model primeiro
+2. **Build service**: Lógica de negócios
+3. **Create controller**: Camada HTTP
+4. **Define routes**: Endpoints e validação
+5. **Write tests**: Cobertura completa
+6. **Generate docs**: Swagger automático
+
+#### **After Implementation:**
+1. **Test manually**: Use Postman ou curl
+2. **Check docs**: Verifique Swagger UI
+3. **Run all tests**: npm run test
+4. **Performance check**: Para endpoints com muitos dados
+5. **Security review**: Validação e sanitização
+
+### 🎯 **Quick Feature Checklist**
+
+Antes de considerar a feature "completa":
+
+- [ ] **Database**: Modelo Prisma criado e migrado?
+- [ ] **Service**: Lógica de negócios implementada?
+- [ ] **Controller**: Handlers HTTP criados?
+- [ ] **Routes**: Endpoints registrados com validação?
+- [ ] **Schemas**: JSON Schema para validação/docs?
+- [ ] **Tests**: Todos endpoints testados?
+- [ ] **Docs**: Swagger funcionando?
+- [ ] **Error handling**: Casos de erro tratados?
+- [ ] **Authentication**: Se necessário, implementado?
+- [ ] **Integration**: Registrado no app principal?
+
+### 💡 **Pro Tips for Claude Code**
+
+1. **Start with the complete prompt**: Use o template exato
+2. **Follow layer order**: Service → Controller → Routes  
+3. **Test incrementally**: Teste cada camada
+4. **Check examples**: Use Users/Products como referência
+5. **Validate early**: Schema validation desde o início
+6. **Document everything**: Swagger é automático
+
+### 📊 **Example File Templates**
+
+#### **Service Template**
+```javascript
+export class FeatureService {
+  constructor(prisma) {
+    this.prisma = prisma;
+  }
+
+  async getAll(query = {}) {
+    // Implementation with pagination
+  }
+
+  async getById(id) {
+    // Implementation with error handling
+  }
+
+  async create(data) {
+    // Implementation with validation
+  }
+
+  // ... more methods
+}
+```
+
+#### **Controller Template**  
+```javascript
+export class FeatureController {
+  constructor(fastify) {
+    this.service = new FeatureService(fastify.prisma);
+  }
+
+  getAll = asyncHandler(async (request, reply) => {
+    const result = await this.service.getAll(request.query);
+    reply.send(result);
+  });
+
+  // ... more handlers
+}
+```
+
+#### **Routes Template**
+```javascript
+export default async function featureRoutes(fastify) {
+  const controller = new FeatureController(fastify);
+
+  fastify.get('/features', {
+    schema: featureSchemas.getAll
+  }, controller.getAll);
+
+  // ... more routes
+}
+```
+
 Ready to vibecode your next API! ⚡

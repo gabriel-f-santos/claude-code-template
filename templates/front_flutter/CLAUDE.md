@@ -241,6 +241,233 @@ mkdir -p lib/features/my_feature/{data/{models,providers,repositories},domain/mo
 # Implementar seguindo os patterns do template
 ```
 
+## 🎯 Feature Development Guide
+
+### 📋 **Step-by-Step Process for Adding New Features**
+
+Siga este processo rigorosamente para manter a consistência arquitetural:
+
+#### **1. 📁 Create Feature Structure**
+```bash
+# Exemplo: Adicionando feature "Products"
+mkdir -p lib/features/products/{data/{models,providers,repositories,services},domain/{models,use_cases},presentation/{providers,screens,widgets}}
+```
+
+#### **2. 📊 Domain Layer (Business Logic)**
+```bash
+# 1. Create domain model
+touch lib/features/products/domain/models/product.dart
+
+# 2. Create use cases (optional for simple CRUD)
+touch lib/features/products/domain/use_cases/get_products_use_case.dart
+```
+
+#### **3. 💾 Data Layer (External Data)**
+```bash
+# 1. Create data model with JSON serialization
+touch lib/features/products/data/models/product_model.dart
+
+# 2. Create repository implementation
+touch lib/features/products/data/repositories/products_repository.dart
+
+# 3. Create data providers (API, local storage)
+touch lib/features/products/data/providers/products_api_provider.dart
+touch lib/features/products/data/services/products_service.dart
+```
+
+#### **4. 🎨 Presentation Layer (UI)**
+```bash
+# 1. Create Riverpod providers (state management)
+touch lib/features/products/presentation/providers/products_provider.dart
+
+# 2. Create screens
+touch lib/features/products/presentation/screens/products_screen.dart
+touch lib/features/products/presentation/screens/product_detail_screen.dart
+
+# 3. Create widgets
+touch lib/features/products/presentation/widgets/product_card.dart
+touch lib/features/products/presentation/widgets/products_list.dart
+```
+
+#### **5. 🧪 Testing**
+```bash
+# Create tests following the same structure
+mkdir -p test/features/products/{data,domain,presentation}
+touch test/features/products/data/repositories/products_repository_test.dart
+touch test/features/products/presentation/providers/products_provider_test.dart
+```
+
+### 🤖 **Claude Code Prompt Templates**
+
+#### **📝 Complete Feature Prompt**
+```
+Você é um especialista em Flutter com arquitetura feature-first usando Riverpod.
+
+TAREFA: Criar a feature "Products" completa seguindo nossa arquitetura.
+
+ARQUITETURA OBRIGATÓRIA:
+lib/features/products/
+├── data/
+│   ├── models/product_model.dart (Freezed + JsonAnnotation)
+│   ├── repositories/products_repository.dart (implementação)
+│   ├── providers/products_api_provider.dart (Dio HTTP)
+│   └── services/products_service.dart (business data logic)
+├── domain/
+│   └── models/product.dart (entidade pura)
+├── presentation/
+│   ├── providers/products_provider.dart (@riverpod AsyncNotifier)
+│   ├── screens/products_screen.dart (ConsumerWidget)
+│   └── widgets/product_card.dart (reutilizável)
+
+REQUISITOS TÉCNICOS:
+✅ Use @riverpod com code generation
+✅ Freezed para modelos imutáveis  
+✅ AsyncNotifier para estado assíncrono
+✅ Result<T, E> para error handling
+✅ Dio para HTTP requests
+✅ Repository pattern
+✅ Teste unitário básico
+
+FUNCIONALIDADES:
+- Listar produtos com loading/error states
+- Buscar produto por ID
+- Adicionar produto (POST)
+- Atualizar produto (PUT) 
+- Deletar produto (DELETE)
+
+EXEMPLO DE ESTRUTURA:
+- ProductModel (data) extends Product (domain)
+- ProductsRepository implementa interface
+- ProductsNotifier extends AsyncNotifier<List<Product>>
+- ProductsScreen usa ConsumerWidget
+- Error handling com Result pattern
+
+ENTREGUE: Código completo de todos os arquivos seguindo exatamente nossa arquitetura.
+```
+
+#### **📱 UI-Only Feature Prompt**
+```
+TAREFA: Criar apenas a UI da feature "Settings" (sem backend).
+
+ARQUITETURA:
+lib/features/settings/
+├── presentation/
+│   ├── providers/settings_provider.dart (StateNotifier local)
+│   ├── screens/settings_screen.dart
+│   └── widgets/setting_tile.dart
+
+REQUISITOS:
+✅ Settings locais (SharedPreferences)
+✅ Theme switching
+✅ Language selection  
+✅ Notification preferences
+✅ StateNotifier para estado local
+✅ Persistência automática
+
+NÃO CRIE: data/ e domain/ layers (não precisam para settings locais)
+```
+
+#### **🔄 Extend Existing Feature Prompt**
+```
+TAREFA: Adicionar funcionalidade "Favorites" à feature Users existente.
+
+MODIFICAÇÕES NECESSÁRIAS:
+1. lib/features/users/domain/models/user.dart 
+   - Adicionar campo isFavorite
+
+2. lib/features/users/data/models/user_model.dart
+   - Atualizar JsonAnnotation  
+
+3. lib/features/users/data/repositories/users_repository.dart
+   - Adicionar toggleFavorite method
+
+4. lib/features/users/presentation/providers/users_provider.dart
+   - Adicionar toggleFavorite action
+
+5. lib/features/users/presentation/widgets/user_card.dart
+   - Adicionar favorite button/icon
+
+MANTENHA: Arquitetura existente, apenas estenda funcionalidades.
+```
+
+### 🏗️ **Architecture Decision Tree**
+
+```
+Nova Feature? 
+├── Precisa de dados externos? 
+│   ├── SIM → Criar: domain/ + data/ + presentation/
+│   └── NÃO → Criar apenas: presentation/
+├── É extensão de feature existente?
+│   ├── SIM → Modificar arquivos existentes
+│   └── NÃO → Criar nova estrutura completa
+├── Complexidade alta?
+│   ├── SIM → Adicionar domain/use_cases/
+│   └── NÃO → Use apenas Repository pattern
+```
+
+### 📐 **Architectural Rules (NEVER BREAK)**
+
+#### **✅ ALWAYS DO:**
+1. **Feature isolation**: Nunca importe de outras features
+2. **Layer separation**: Data ↔ Domain ↔ Presentation
+3. **Dependency direction**: Presentation → Domain ← Data
+4. **Immutable models**: Use Freezed sempre
+5. **Code generation**: @riverpod, JsonAnnotation, Freezed
+6. **Error handling**: Result<T, E> pattern
+7. **Testing**: Pelo menos repository e provider tests
+
+#### **❌ NEVER DO:**
+1. **Cross-feature imports**: `import '../other_feature'`
+2. **Direct API calls in UI**: Use sempre repositories
+3. **Mutable state**: Evite setState, use Riverpod
+4. **Mixed concerns**: UI logic no repository
+5. **Skip error handling**: Sempre trate erros
+6. **Ignore testing**: Toda feature deve ter testes
+
+### 🔄 **Reasoning Process for Features**
+
+#### **Before Adding Any Feature:**
+1. **Define scope**: O que exatamente esta feature faz?
+2. **Check dependencies**: Precisa de outras features?
+3. **Choose layers**: Precisa de todas as 3 layers?
+4. **Plan state**: Como o estado será gerenciado?
+5. **Design API**: Como outros podem usar esta feature?
+
+#### **During Development:**
+1. **Start with domain**: Define modelos e interfaces
+2. **Implement data**: Repositories e providers
+3. **Build presentation**: UI e state management
+4. **Add tests**: Unit tests primeiro
+5. **Integrate**: Conecte com o resto do app
+
+#### **After Implementation:**
+1. **Test thoroughly**: Manual e automated
+2. **Document**: Adicione à documentação  
+3. **Refactor**: Melhore código se necessário
+4. **Monitor**: Observe performance e bugs
+
+### 🎯 **Quick Feature Checklist**
+
+Antes de considerar a feature "completa":
+
+- [ ] **Structure**: Seguiu exatamente a estrutura de pastas?
+- [ ] **Models**: Usou Freezed e JsonAnnotation?
+- [ ] **State**: Implementou com @riverpod AsyncNotifier?
+- [ ] **Repository**: Seguiu o Repository pattern?
+- [ ] **Error Handling**: Usou Result<T, E>?
+- [ ] **UI**: ConsumerWidget com loading/error states?
+- [ ] **Tests**: Pelo menos repository e provider?
+- [ ] **Dependencies**: Não importou de outras features?
+
+### 💡 **Pro Tips for Claude Code**
+
+1. **Always start with the prompt**: Use os templates exatos
+2. **Follow structure religiously**: Não improvise a arquitetura  
+3. **Generate code incrementally**: Uma layer por vez
+4. **Test as you go**: Não deixe tudo para o final
+5. **Use our examples**: Features Home/Auth como referência
+6. **Ask for clarification**: Se não entender, pergunte
+
 ## 🎯 Evolution Path
 
 1. **Start Simple**: Use apenas UI + Data layers

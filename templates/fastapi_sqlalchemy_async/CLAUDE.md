@@ -273,3 +273,453 @@ This template is specifically designed for:
 - **Building MVPs quickly**
 
 Start coding and see results in minutes, not hours! 🚀
+
+## 🎯 Feature Development Guide
+
+### 📋 **Step-by-Step Process for Adding New Features**
+
+Siga este processo rigorosamente para manter a consistência arquitetural vibecoding com SQLAlchemy Async:
+
+#### **1. 📁 Create Feature Structure**
+```bash
+# Exemplo: Adicionando feature "Products"
+mkdir -p app/{models,schemas,services,api}
+mkdir -p tests
+
+# Os arquivos específicos da feature
+touch app/models/product.py
+touch app/schemas/product.py
+touch app/services/product_service.py
+touch app/api/products.py
+touch tests/test_products.py
+```
+
+#### **2. 📊 Database Model (SQLAlchemy Async)**
+```bash
+# 1. Define SQLAlchemy async model with relationships
+# app/models/product.py
+
+# 2. Create Alembic migration
+alembic revision --autogenerate -m "Add products table"
+alembic upgrade head
+```
+
+#### **3. 💾 Service Layer (Async Business Logic)**
+```bash
+# Implemente primeiro o service com toda a lógica de negócios async
+# app/services/product_service.py
+```
+
+#### **4. 🎨 API Layer (Async FastAPI Router)**
+```bash
+# 1. Create Pydantic schemas para validation
+# 2. Implement async router com endpoints  
+# 3. Register router no main app
+```
+
+#### **5. 🧪 Testing**
+```bash
+# Create comprehensive async tests
+touch tests/test_products.py
+pytest tests/test_products.py -v
+```
+
+### 🤖 **Claude Code Prompt Templates**
+
+#### **📝 Complete Async SQLAlchemy CRUD Feature Prompt**
+```
+Você é um especialista em FastAPI SQLAlchemy Async Vibecoding API development.
+
+TAREFA: Criar a feature "Products" completa seguindo nossa arquitetura vibecoding SQLAlchemy Async.
+
+ARQUITETURA OBRIGATÓRIA:
+app/
+├── models/product.py (SQLAlchemy async model + relationships)
+├── schemas/product.py (Pydantic schemas para validation)
+├── services/product_service.py (async business logic + database operations)
+├── api/products.py (async FastAPI router + endpoints)
+└── tests/test_products.py (comprehensive async tests)
+
+REQUISITOS TÉCNICOS:
+✅ SQLAlchemy 2.0 async model com proper relationships
+✅ Pydantic schemas para validation automática
+✅ FastAPI automatic documentation
+✅ Error handling com proper HTTP codes
+✅ Async database operations (CRUD) com AsyncSession
+✅ Dependency injection com get_async_session
+✅ Testes com 100% de cobertura dos endpoints (async)
+✅ Alembic migration para database schema
+
+FUNCIONALIDADES:
+- GET /products (list with pagination, filters) - async
+- GET /products/{id} (get by ID) - async
+- POST /products (create with validation) - async
+- PUT /products/{id} (update) - async
+- DELETE /products/{id} (delete) - async
+- GET /products/category/{category_id} (products by category) - async
+
+SQLALCHEMY ASYNC MODEL NECESSÁRIO:
+```python
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, select
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+from ..core.database import Base
+
+class Product(Base):
+    __tablename__ = "products"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False, index=True)
+    description = Column(Text)
+    price = Column(Float, nullable=False, index=True)
+    category_id = Column(Integer, ForeignKey("categories.id"))
+    in_stock = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    category = relationship("Category", back_populates="products")
+```
+
+PADRÕES ASYNC SQLALCHEMY VIBECODING:
+- Service class com métodos async estáticos usando AsyncSession
+- SQLAlchemy 2.0 select() syntax (não query())
+- Proper error handling com HTTPException
+- Async database transactions para operações complexas
+- Relationships bem definidas com lazy loading
+- Testes usando async TestClient com database
+
+ENTREGUE: Código completo de todos os arquivos + migration.
+```
+
+#### **📱 Simple Async SQLAlchemy Feature Prompt**
+```
+TAREFA: Criar feature "Categories" simples com SQLAlchemy Async.
+
+ARQUITETURA MÍNIMA:
+- app/models/category.py (SQLAlchemy async model)
+- app/schemas/category.py (Pydantic schemas)
+- app/services/category_service.py (async basic CRUD)
+- app/api/categories.py (async FastAPI router)
+- tests/test_categories.py (async basic tests)
+
+FUNCIONALIDADES:
+- CRUD básico async (Create, Read, Update, Delete)
+- Validação com Pydantic
+- Database indexes básicos
+- Testes async essenciais
+
+NÃO PRECISA: Relacionamentos complexos, business logic avançada.
+```
+
+#### **🔄 Extend Existing Async Feature Prompt**
+```
+TAREFA: Adicionar "Reviews" à feature Products existente (async).
+
+MODIFICAÇÕES NECESSÁRIAS:
+
+1. app/models/review.py
+   - Criar async Review model com ForeignKey para Product e User
+
+2. app/models/product.py
+   - Adicionar relationship("Review", back_populates="product")
+
+3. app/services/product_service.py
+   - Adicionar async get_product_reviews(session, product_id)
+   - Adicionar async add_review(session, product_id, review_data)
+
+4. app/api/products.py
+   - GET /products/{id}/reviews (async)
+   - POST /products/{id}/reviews (async)
+
+5. app/schemas/product.py
+   - Adicionar Review schemas
+   - Estender ProductRead com reviews
+
+6. tests/test_products.py
+   - Adicionar testes async para review endpoints
+
+7. Alembic migration
+   - alembic revision --autogenerate -m "Add reviews table"
+
+MANTENHA: Arquitetura SQLAlchemy async existente, foreign keys, indexes.
+```
+
+### 🏗️ **Async SQLAlchemy Architecture Decision Tree**
+
+```
+Nova Feature Async?
+├── Precisa de relacionamentos?
+│   ├── SIM → ForeignKey + relationship() + async joins
+│   └── NÃO → Async table simples
+├── É extensão de feature existente?
+│   ├── SIM → Adicionar aos models async existentes
+│   └── NÃO → Criar nova estrutura async completa
+├── Queries complexas?
+│   ├── SIM → Async joins + subqueries + aggregations
+│   └── NÃO → Async query operations simples
+├── Performance crítica?
+│   ├── SIM → Async indexes compostos + query optimization
+│   └── NÃO → Async indexes básicos
+```
+
+### 📐 **Async SQLAlchemy Architectural Rules (NEVER BREAK)**
+
+#### **✅ ALWAYS DO:**
+1. **Async everywhere**: Todos métodos de database são async
+2. **SQLAlchemy 2.0 syntax**: Use select() ao invés de query()
+3. **AsyncSession**: Use Depends(get_async_session) sempre
+4. **Proper relationships**: ForeignKey + relationship() bem definidos
+5. **Migrations**: Alembic para todas mudanças de schema
+6. **Async validation**: Pydantic schemas para todos inputs/outputs
+7. **Async tests**: Teste todos cenários com async database
+
+#### **❌ NEVER DO:**
+1. **Sync operations**: Nunca misture sync e async
+2. **Old query() syntax**: Use sempre SQLAlchemy 2.0 select()
+3. **Missing await**: Toda operação database precisa de await
+4. **Blocking operations**: Evite operações que bloqueiam event loop
+5. **Skip async testing**: Toda feature precisa de testes async
+6. **No session management**: AsyncSession lifecycle importante
+7. **Forget error handling**: Async errors precisam de tratamento específico
+
+### 🔄 **Async SQLAlchemy Reasoning Process**
+
+#### **Before Adding Any Async Feature:**
+1. **Define async patterns**: Como será a estrutura async?
+2. **Plan async relationships**: Como relacionamentos funcionarão async?
+3. **Consider performance**: Async operations são adequadas?
+4. **Design async flows**: Como dados fluem pela aplicação?
+5. **Think concurrency**: Como lidar com operações concorrentes?
+
+#### **During Async Development:**
+1. **Start with async model**: SQLAlchemy async model primeiro
+2. **Create migration**: Alembic migration setup
+3. **Build async service**: Business logic com AsyncSession
+4. **Create async API**: Endpoints com async dependency injection
+5. **Write async tests**: Cobertura completa com async database
+6. **Test async patterns**: Verificar comportamento assíncrono
+
+#### **After Async Implementation:**
+1. **Test async manually**: Use FastAPI docs interface
+2. **Check async performance**: Verifique concurrent requests
+3. **Run async tests**: pytest com async database test
+4. **Monitor async behavior**: Async performance patterns
+5. **Async migration test**: Fresh database + async operations
+
+### 🎯 **Async SQLAlchemy Feature Checklist**
+
+Antes de considerar a feature async "completa":
+
+- [ ] **Async Model**: SQLAlchemy async model criado com relationships?
+- [ ] **Migration**: Alembic migration aplicada?
+- [ ] **Async Service**: Business logic async implementada?
+- [ ] **Async API**: Endpoints async com dependency injection funcionando?
+- [ ] **Schemas**: Pydantic schemas definidos?
+- [ ] **Async Tests**: Todos endpoints testados async com database?
+- [ ] **Indexes**: Performance async queries otimizada?
+- [ ] **Async Error handling**: Casos de erro async tratados?
+- [ ] **Documentation**: FastAPI async docs funcionando?
+- [ ] **Async Relationships**: Foreign keys async funcionando?
+
+### 💡 **Async SQLAlchemy Pro Tips for Claude Code**
+
+1. **Start with async everywhere**: Não misture sync/async patterns
+2. **Use SQLAlchemy 2.0**: select() syntax é mais clara e async-friendly
+3. **Plan session lifecycle**: AsyncSession management é crítico
+4. **Test concurrency**: Verifique comportamento com múltiplas requests
+5. **Monitor performance**: Async pode ser mais rápido mas com overhead
+6. **Use proper typing**: AsyncSession typing é importante
+
+### 📊 **Async SQLAlchemy Example Templates**
+
+#### **Async Service Template**
+```python
+from typing import List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from ..models.feature import Feature
+from ..schemas.feature import FeatureCreate, FeatureUpdate
+from fastapi import HTTPException
+
+class FeatureService:
+    @staticmethod
+    async def create_feature(session: AsyncSession, feature_data: FeatureCreate) -> Feature:
+        # Check if already exists (async)
+        result = await session.execute(select(Feature).where(Feature.name == feature_data.name))
+        existing = result.scalar_one_or_none()
+        if existing:
+            raise HTTPException(status_code=400, detail="Feature already exists")
+        
+        # Create new feature (async)
+        db_feature = Feature(**feature_data.model_dump())
+        session.add(db_feature)
+        await session.commit()
+        await session.refresh(db_feature)
+        return db_feature
+    
+    @staticmethod
+    async def get_features(session: AsyncSession, skip: int = 0, limit: int = 100) -> List[Feature]:
+        result = await session.execute(select(Feature).offset(skip).limit(limit))
+        return result.scalars().all()
+    
+    @staticmethod
+    async def get_feature_by_id(session: AsyncSession, feature_id: int) -> Optional[Feature]:
+        result = await session.execute(select(Feature).where(Feature.id == feature_id))
+        return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def update_feature(session: AsyncSession, feature_id: int, feature_data: FeatureUpdate) -> Optional[Feature]:
+        result = await session.execute(select(Feature).where(Feature.id == feature_id))
+        db_feature = result.scalar_one_or_none()
+        if not db_feature:
+            return None
+            
+        update_data = feature_data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(db_feature, field, value)
+            
+        await session.commit()
+        await session.refresh(db_feature)
+        return db_feature
+    
+    @staticmethod
+    async def delete_feature(session: AsyncSession, feature_id: int) -> bool:
+        result = await session.execute(select(Feature).where(Feature.id == feature_id))
+        db_feature = result.scalar_one_or_none()
+        if not db_feature:
+            return False
+            
+        await session.delete(db_feature)
+        await session.commit()
+        return True
+```
+
+#### **Async API Router Template**  
+```python
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
+
+from ..core.database import get_async_session
+from ..schemas.feature import FeatureCreate, FeatureRead, FeatureUpdate
+from ..services.feature_service import FeatureService
+
+router = APIRouter(prefix="/features", tags=["features"])
+
+@router.post("/", response_model=FeatureRead, status_code=status.HTTP_201_CREATED)
+async def create_feature(
+    feature_data: FeatureCreate, 
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Create a new feature (async)"""
+    return await FeatureService.create_feature(session, feature_data)
+
+@router.get("/", response_model=List[FeatureRead])
+async def get_features(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get list of features with pagination (async)"""
+    return await FeatureService.get_features(session, skip=skip, limit=limit)
+
+@router.get("/{feature_id}", response_model=FeatureRead)
+async def get_feature(
+    feature_id: int, 
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get a specific feature by ID (async)"""
+    feature = await FeatureService.get_feature_by_id(session, feature_id)
+    if not feature:
+        raise HTTPException(status_code=404, detail="Feature not found")
+    return feature
+
+@router.put("/{feature_id}", response_model=FeatureRead)
+async def update_feature(
+    feature_id: int, 
+    feature_data: FeatureUpdate, 
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Update an existing feature (async)"""
+    feature = await FeatureService.update_feature(session, feature_id, feature_data)
+    if not feature:
+        raise HTTPException(status_code=404, detail="Feature not found")
+    return feature
+
+@router.delete("/{feature_id}")
+async def delete_feature(
+    feature_id: int, 
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Delete a feature (async)"""
+    success = await FeatureService.delete_feature(session, feature_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Feature not found")
+    return {"message": "Feature deleted successfully"}
+```
+
+#### **Async Test Template**
+```python
+import pytest
+from httpx import AsyncClient
+from ..main import app
+
+@pytest.mark.asyncio
+async def test_create_feature():
+    """Test creating a feature (async)"""
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.post("/features/", json={
+            "name": "Test Feature",
+            "description": "Test description",
+            "priority": 3
+        })
+    
+    assert response.status_code == 201
+    data = response.json()
+    assert data["name"] == "Test Feature"
+    assert data["priority"] == 3
+    assert "id" in data
+    assert "created_at" in data
+
+@pytest.mark.asyncio
+async def test_get_features():
+    """Test getting features list (async)"""
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get("/features/")
+    
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+
+@pytest.mark.asyncio
+async def test_get_feature_not_found():
+    """Test getting non-existent feature (async)"""
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get("/features/999")
+    
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"]
+```
+
+### 🎯 **Async Performance Benefits**
+
+#### **🚀 Async Advantages**
+- High concurrency with single thread
+- Non-blocking I/O operations
+- Better resource utilization
+- Scales well under load
+
+#### **📚 SQLAlchemy Async Benefits**
+- Connection pool efficiency
+- Concurrent query execution
+- Reduced thread overhead
+- Modern async patterns
+
+#### **🎨 Vibecoding with Async**
+- Fast concurrent operations
+- Real-time capabilities
+- Scalable architecture
+- Modern development patterns
+
+Ready to vibecode your next async API! ⚡
