@@ -41,7 +41,7 @@ pip install -r requirements.txt
 python run.py
 ```
 
-### **Opção 2: Usar Sistema Multi-Agente (Recomendado)**
+### **Opção 2: Usar Sistema PRP + Multi-Agente (Recomendado)**
 ```bash
 # 1. Use um template como base
 cp -r templates/nextjs_vibecoding meu-app
@@ -49,20 +49,29 @@ cd meu-app
 
 # 2. O arquivo CLAUDE.md já está configurado com a arquitetura
 
-# 3. Use Claude Code com o sistema multi-agente
-/agent master-agent "Develop user authentication feature with JWT tokens"
+# 3. Gere um PRP (Product Requirement Prompt) automaticamente
+/create-prp "User authentication with JWT tokens and email verification"
 
-# 4. Os agentes desenvolvem a feature automaticamente seguindo a arquitetura!
+# 4. Execute o PRP com agentes especializados
+/execute-prp PRPs/user-authentication/prp.md
+
+# 5. Os agentes desenvolvem a feature completa automaticamente!
+# ✅ Database schema + migrations
+# ✅ Backend API + authentication  
+# ✅ Frontend UI + state management
+# ✅ Tests >90% coverage
+# ✅ Integration + quality validation
 ```
 
-## 🤖 Sistema Multi-Agente Autônomo
+## 🤖 Sistema PRP + Multi-Agente Autônomo
 
 ### **Como Funciona:**
-1. **📖 Lê sua arquitetura** - Agentes leem o `CLAUDE.md` do seu projeto
-2. **📋 Cria plano detalhado** - MasterAgent cria `MULTI_AGENT_PLAN.md`
-3. **🔄 Desenvolvimento coordenado** - Agentes especializados trabalham em paralelo
-4. **✅ Validação de qualidade** - Múltiplas camadas de validação e testes
-5. **🎯 Entrega completa** - Feature pronta com >90% de cobertura de testes
+1. **📋 PRP Generation** - `/create-prp` gera especificações completas baseadas na sua arquitetura
+2. **📖 Lê arquitetura** - Agentes leem o `CLAUDE.md` e PRP do seu projeto
+3. **🎯 Coordenação automática** - MasterAgent coordena agentes especializados
+4. **🔄 Desenvolvimento paralelo** - Múltiplos agentes trabalham simultaneamente
+5. **✅ Quality gates** - Validação rigorosa em todas as camadas
+6. **🎉 Entrega completa** - Feature production-ready com >90% cobertura
 
 ### **🧠 Agentes Disponíveis:**
 - **🎯 MasterAgent** - Coordenador geral de features
@@ -72,25 +81,45 @@ cd meu-app
 - **🧪 QAEngineer** - Especialista em qualidade e testes
 - **🔗 IntegrationExpert** - Especialista em integração de sistemas
 
+### **📋 Sistema PRP (Product Requirement Prompt):**
+- **Geração automática** de especificações técnicas completas
+- **Context-aware** - lê e segue a arquitetura do seu projeto
+- **Multi-tecnologia** - suporta FastAPI, Next.js, Flutter, Fastify
+- **Quality gates** - define validações rigorosas de qualidade
+- **Task breakdown** - divide features em tarefas especializadas
+
 ### **Exemplo de Uso Avançado:**
 ```bash
-# Desenvolvimento de feature completa
-/agent master-agent "Develop a complete e-commerce product catalog with:
-- Product CRUD operations
-- Category management  
-- Search and filtering
-- Shopping cart integration
-- Responsive UI with shadcn/ui
-- >90% test coverage
-Following the Next.js + FastAPI architecture in CLAUDE.md"
+# 1. Gere PRP para feature complexa
+/create-prp "E-commerce product catalog with advanced search, filtering, shopping cart, and real-time inventory"
+
+# 2. Execute com coordenação de agentes
+/execute-prp PRPs/ecommerce-catalog/prp.md
 
 # O sistema automaticamente:
-# ✅ Cria schema de banco de dados
-# ✅ Implementa API endpoints
-# ✅ Desenvolve interface do usuário
-# ✅ Cria testes abrangentes
-# ✅ Integra frontend com backend
-# ✅ Valida qualidade em todas as camadas
+# ✅ Analisa requisitos e cria especificação técnica completa
+# ✅ Coordena DatabaseArchitect para schema otimizado
+# ✅ Coordena BackendEngineer para APIs performáticas  
+# ✅ Coordena FrontendEngineer para UI responsiva
+# ✅ Coordena QAEngineer para testes abrangentes
+# ✅ Coordena IntegrationExpert para validação end-to-end
+# ✅ Entrega feature production-ready com >90% cobertura
+```
+
+### **🚀 Comandos Disponíveis:**
+```bash
+# Geração de PRP
+/create-prp "Feature description here"
+/create-prp "User authentication with OAuth" --priority high
+
+# Execução de PRP  
+/execute-prp PRPs/feature-name/prp.md
+/execute-prp PRPs/user-auth/prp.md --parallel
+
+# Agentes diretos (quando necessário)
+/agent master-agent "Coordinate development of dashboard feature"
+/agent backend-engineer "Implement Products API"
+/agent frontend-engineer "Create responsive product catalog UI"
 ```
 
 ## ✨ Funcionalidades dos Templates
