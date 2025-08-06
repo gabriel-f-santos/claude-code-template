@@ -20,62 +20,132 @@ You are a **PRP Generator** specialized in creating comprehensive Product Requir
 
 ## 🛠️ PRP Generation Process
 
-### Step 1: **Read Project Context**
+### Step 1: **Auto-Detect Template Type**
 ```bash
-# ALWAYS read these files first
-1. CLAUDE.md - Project architecture, patterns, and tech stack
-2. Current project structure - Understand existing codebase
-3. Templates and conventions - Follow established patterns
+# Automatically detect which template is being used
+if exists("requirements.txt") && grep("fastapi" requirements.txt):
+    template_type = "fastapi_sqlalchemy"
+    prp_template = "templates/fastapi_sqlalchemy/.claude/prp-template.md"
+elif exists("package.json") && grep("next" package.json):
+    template_type = "nextjs_vibecoding"
+    prp_template = "templates/nextjs_vibecoding/.claude/prp-template.md"
+elif exists("pubspec.yaml") && grep("flutter" pubspec.yaml):
+    template_type = "front_flutter"
+    prp_template = "templates/front_flutter/.claude/prp-template.md"
+elif exists("package.json") && grep("fastify" package.json):
+    template_type = "fastify_api_ts"
+    prp_template = "templates/fastify_api_ts/.claude/prp-template.md"
+else:
+    template_type = "generic"
+    prp_template = ".claude/prp-base-template.md"  # fallback
 ```
 
-### Step 2: **Analyze Feature Requirements**
+### Step 2: **Read Template-Specific Context**
+```bash
+# Read the specific template's PRP and architecture
+1. {template}/CLAUDE.md - Technology-specific architecture patterns
+2. {template}/.claude/prp-template.md - Template-specific PRP structure
+3. Current project structure - Understand existing codebase
+4. Template conventions - Follow established patterns
+```
+
+### Step 3: **Analyze Feature Requirements**
 - Parse the feature description
 - Identify scope and complexity
-- Determine required components (DB, API, UI)
-- Estimate development phases
+- Determine required components (DB, API, UI) based on template
+- Estimate development phases using template patterns
 
-### Step 3: **Generate Context-Aware PRP**
-- Use project-specific technology stack
-- Follow architectural patterns from CLAUDE.md
-- Include proper file structure based on project type
-- Add relevant validation commands and quality gates
+### Step 4: **Generate Template-Specific PRP**
+- Use detected template's PRP structure
+- Fill in template-specific technology stack details
+- Follow architectural patterns from template's CLAUDE.md
+- Include template-specific validation commands and quality gates
+- Add appropriate file structure for detected template
 
-### Step 4: **Create Feature Structure**
+### Step 5: **Create Feature Structure**
 ```bash
 # Create comprehensive feature directory structure
 mkdir -p PRPs/[feature-name]/{backend,frontend,images/{desktop,mobile,components,flows}}
 ```
 
-### Step 5: **Generate PRP Document**
-- Create complete PRP following the base template
-- Customize for specific technology stack
-- Include multi-agent task breakdown
-- Add project-specific quality gates
+### Step 6: **Generate Template-Specific PRP Document**
+- Load the detected template's PRP structure
+- Fill in feature-specific details using template patterns
+- Include template-specific implementation blueprints
+- Add template-specific validation commands
+- Include multi-agent task breakdown for the template
+- Add technology-specific quality gates
 
 ## 📊 PRP Generation Logic
 
-### Technology Stack Detection:
+### Template Auto-Detection Logic:
 ```python
-# Based on CLAUDE.md analysis
-if "FastAPI" in project_tech:
-    backend_framework = "FastAPI"
-    database_orm = detect_orm()  # SQLAlchemy, Beanie, etc.
-    test_framework = "pytest"
+def detect_template_type():
+    """Auto-detect which base template is being used"""
     
-elif "Fastify" in project_tech:
-    backend_framework = "Fastify" 
-    database_orm = "Prisma"
-    test_framework = "vitest"
+    # FastAPI + SQLAlchemy detection
+    if file_exists("requirements.txt"):
+        requirements = read_file("requirements.txt")
+        if "fastapi" in requirements.lower():
+            return {
+                "type": "fastapi_sqlalchemy",
+                "prp_template": "templates/fastapi_sqlalchemy/.claude/prp-template.md",
+                "claude_md": "templates/fastapi_sqlalchemy/CLAUDE.md",
+                "framework": "FastAPI + SQLAlchemy",
+                "database": "PostgreSQL/SQLite",
+                "test_framework": "pytest"
+            }
     
-elif "Next.js" in project_tech:
-    frontend_framework = "Next.js"
-    ui_library = "shadcn/ui"
-    state_management = "Zustand"
+    # Next.js detection  
+    if file_exists("package.json"):
+        package_json = read_json("package.json")
+        dependencies = {**package_json.get("dependencies", {}), **package_json.get("devDependencies", {})}
+        
+        if "next" in dependencies:
+            return {
+                "type": "nextjs_vibecoding",
+                "prp_template": "templates/nextjs_vibecoding/.claude/prp-template.md",
+                "claude_md": "templates/nextjs_vibecoding/CLAUDE.md",
+                "framework": "Next.js + TypeScript",
+                "ui_library": "shadcn/ui",
+                "state_management": "Zustand",
+                "test_framework": "Jest"
+            }
+        
+        # Fastify + TypeScript detection
+        elif "fastify" in dependencies:
+            return {
+                "type": "fastify_api_ts",
+                "prp_template": "templates/fastify_api_ts/.claude/prp-template.md",
+                "claude_md": "templates/fastify_api_ts/CLAUDE.md",
+                "framework": "Fastify + TypeScript",
+                "database": "Prisma + SQLite",
+                "test_framework": "Vitest"
+            }
     
-elif "Flutter" in project_tech:
-    frontend_framework = "Flutter"
-    state_management = "Riverpod"
-    architecture = "Feature-First"
+    # Flutter detection
+    if file_exists("pubspec.yaml"):
+        pubspec = read_yaml("pubspec.yaml")
+        dependencies = pubspec.get("dependencies", {})
+        
+        if "flutter" in dependencies:
+            return {
+                "type": "front_flutter", 
+                "prp_template": "templates/front_flutter/.claude/prp-template.md",
+                "claude_md": "templates/front_flutter/CLAUDE.md",
+                "framework": "Flutter + Riverpod",
+                "architecture": "Feature-First + MVVM",
+                "test_framework": "Flutter Test"
+            }
+    
+    # Fallback to generic template
+    return {
+        "type": "generic",
+        "prp_template": ".claude/prp-base-template.md",
+        "claude_md": "CLAUDE.md",
+        "framework": "Generic",
+        "note": "Using generic template - consider using a specific base template"
+    }
 ```
 
 ### Feature Type Classification:
@@ -292,33 +362,103 @@ class [Entity]Screen extends ConsumerWidget {
 - [ ] Documentation complete
 ```
 
-## 🚀 Example Generated PRPs
+## 🚀 Template-Specific PRP Examples
 
-### Example 1: Simple Feature
+### Example 1: FastAPI + SQLAlchemy Project
 ```bash
+# Detected: FastAPI project (requirements.txt contains fastapi)
 /create-prp "User profile management with avatar upload"
 
-# Generates:
+# Generates using FastAPI template:
 PRPs/user-profile-management/
-├── prp.md                 # Main PRP with FastAPI + React patterns
-├── backend.md             # SQLAlchemy models, file upload endpoints  
-├── frontend.md            # Profile form components with shadcn/ui
-├── api-contract.md        # RESTful endpoints specification
-└── test-plan.md           # Unit + integration testing strategy
+├── prp.md                 # FastAPI + SQLAlchemy specific PRP
+│   ├── SQLAlchemy models with relationships
+│   ├── FastAPI router implementations  
+│   ├── Pydantic schemas for validation
+│   ├── pytest test commands
+│   └── Alembic migration instructions
+├── backend/
+│   ├── api-spec.md        # FastAPI endpoint specifications
+│   └── database-schema.md # SQLAlchemy model definitions
+├── frontend/              # (if applicable)
+└── images/               # Visual references
 ```
 
-### Example 2: Complex Feature
+### Example 2: Next.js + shadcn/ui Project  
 ```bash
-/create-prp "Real-time chat system with message history and file sharing"
+# Detected: Next.js project (package.json contains next)
+/create-prp "Product catalog with search and filters"
 
-# Generates:
-PRPs/realtime-chat-system/
-├── prp.md                 # Comprehensive PRP with WebSocket patterns
-├── backend.md             # WebSocket setup, message models, file handling
-├── frontend.md            # Real-time UI components, state management
-├── database.md            # Message history schema, file references
-├── api-contract.md        # REST + WebSocket API specifications
-└── test-plan.md           # Complex testing including real-time scenarios
+# Generates using Next.js template:
+PRPs/product-catalog/
+├── prp.md                 # Next.js + shadcn/ui specific PRP
+│   ├── React Server/Client component patterns
+│   ├── shadcn/ui component implementations
+│   ├── Zustand store configurations
+│   ├── TanStack Query integration
+│   ├── Jest test commands
+│   └── Next.js build optimizations
+├── frontend/
+│   ├── components.md      # shadcn/ui component specs
+│   └── state-management.md # Zustand + TanStack Query
+└── images/               # UI mockups and component designs
+```
+
+### Example 3: Flutter + Riverpod Project
+```bash  
+# Detected: Flutter project (pubspec.yaml contains flutter)
+/create-prp "Task management with offline sync"
+
+# Generates using Flutter template:
+PRPs/task-management/
+├── prp.md                 # Flutter + Riverpod specific PRP
+│   ├── Freezed model definitions
+│   ├── Riverpod provider implementations
+│   ├── Feature-first architecture
+│   ├── Widget component structures
+│   ├── Flutter test commands
+│   └── Platform-specific considerations
+├── frontend/
+│   ├── components.md      # Flutter widget specifications
+│   └── state-management.md # Riverpod provider structure
+└── images/               # Mobile UI mockups and flows
+```
+
+### Example 4: Fastify + Prisma Project
+```bash
+# Detected: Fastify project (package.json contains fastify)
+/create-prp "Order management system with inventory tracking"
+
+# Generates using Fastify template:
+PRPs/order-management/
+├── prp.md                 # Fastify + Prisma specific PRP
+│   ├── Prisma schema definitions
+│   ├── TypeScript type generation
+│   ├── JSON Schema validations
+│   ├── Fastify route implementations
+│   ├── Vitest test commands
+│   └── OpenAPI documentation setup
+├── backend/
+│   ├── api-spec.md        # Fastify route specifications  
+│   └── database-schema.md # Prisma schema design
+└── images/               # API flow diagrams
+```
+
+### Example 5: Generic Template (Fallback)
+```bash
+# No specific template detected
+/create-prp "Analytics dashboard with charts"
+
+# Generates using generic template:
+PRPs/analytics-dashboard/
+├── prp.md                 # Generic PRP with placeholders
+│   ├── Technology stack to be filled
+│   ├── Generic implementation patterns
+│   ├── Basic quality gates
+│   └── Standard validation commands
+└── images/               # Visual references
+
+# Note: Recommends using a specific base template for better results
 ```
 
 ## 🎯 Success Criteria
