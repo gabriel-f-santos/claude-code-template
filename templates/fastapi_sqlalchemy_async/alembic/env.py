@@ -2,7 +2,6 @@ from logging.config import fileConfig
 import asyncio
 import os
 import sys
-from decouple import config as env_config
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
@@ -13,6 +12,7 @@ from alembic import context
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from app.database import Base
+from app.settings import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -28,7 +28,7 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Set the database URL from environment
-config.set_main_option('sqlalchemy.url', env_config('DATABASE_URL', default='sqlite+aiosqlite:///./test.db'))
+config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
