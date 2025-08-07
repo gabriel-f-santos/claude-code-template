@@ -1,10 +1,10 @@
 # 📋 /create-prp - Automated PRP Generation Command
 
-You are a **PRP Generator** specialized in creating comprehensive Product Requirement Prompts (PRPs) that integrate seamlessly with the multi-agent development system.
+You are a **PRP Generator** specialized in creating comprehensive Product Requirement Prompts (PRPs) for feature development using template-based architecture detection.
 
 ## 🎯 Your Mission
 
-**GENERATE** complete, context-aware PRPs that enable autonomous feature development following project-specific architectures.
+**GENERATE** complete, context-aware PRPs that enable autonomous feature development by reading from backend_/frontend_/mobile_ template directories and generating feature specifications.
 
 ## 📋 Command Usage
 
@@ -20,60 +20,88 @@ You are a **PRP Generator** specialized in creating comprehensive Product Requir
 
 ## 🛠️ PRP Generation Process
 
-### Step 1: **Auto-Detect Template Type**
+### Step 1: **Auto-Detect Template Directories**
 ```bash
-# Automatically detect which template is being used
-if exists("requirements.txt") && grep("fastapi" requirements.txt):
-    template_type = "fastapi_sqlalchemy"
-    prp_template = "templates/fastapi_sqlalchemy/.claude/prp-template.md"
-elif exists("package.json") && grep("next" package.json):
-    template_type = "nextjs_vibecoding"
-    prp_template = "templates/nextjs_vibecoding/.claude/prp-template.md"
-elif exists("pubspec.yaml") && grep("flutter" pubspec.yaml):
-    template_type = "front_flutter"
-    prp_template = "templates/front_flutter/.claude/prp-template.md"
-elif exists("package.json") && grep("fastify" package.json):
-    template_type = "fastify_api_ts"
-    prp_template = "templates/fastify_api_ts/.claude/prp-template.md"
-else:
-    template_type = "generic"
-    prp_template = ".claude/prp-base-template.md"  # fallback
+# Scan for template directories in project root
+detected_templates = []
+
+if exists("backend_fastapi_sqlalchemy/"):
+    detected_templates.append({
+        "type": "backend",
+        "stack": "fastapi_sqlalchemy", 
+        "template_file": "backend_fastapi_sqlalchemy/.claude/template-prp.md",
+        "claude_md": "backend_fastapi_sqlalchemy/CLAUDE.md"
+    })
+
+if exists("backend_fastapi_beanieodm/"):
+    detected_templates.append({
+        "type": "backend",
+        "stack": "fastapi_beanieodm",
+        "template_file": "backend_fastapi_beanieodm/.claude/template-prp.md", 
+        "claude_md": "backend_fastapi_beanieodm/CLAUDE.md"
+    })
+
+if exists("backend_fastify_api_ts/"):
+    detected_templates.append({
+        "type": "backend",
+        "stack": "fastify_api_ts",
+        "template_file": "backend_fastify_api_ts/.claude/template-prp.md",
+        "claude_md": "backend_fastify_api_ts/CLAUDE.md"
+    })
+
+if exists("frontend_nextjs/"):
+    detected_templates.append({
+        "type": "frontend", 
+        "stack": "nextjs",
+        "template_file": "frontend_nextjs/.claude/template-prp.md",
+        "claude_md": "frontend_nextjs/CLAUDE.md"
+    })
+
+if exists("mobile_flutter/"):
+    detected_templates.append({
+        "type": "mobile",
+        "stack": "flutter",
+        "template_file": "mobile_flutter/.claude/template-prp.md", 
+        "claude_md": "mobile_flutter/CLAUDE.md"
+    })
 ```
 
 ### Step 2: **Read Template-Specific Context**
 ```bash
-# Read the specific template's PRP and architecture
-1. {template}/CLAUDE.md - Technology-specific architecture patterns
-2. {template}/.claude/prp-template.md - Template-specific PRP structure
-3. Current project structure - Understand existing codebase
-4. Template conventions - Follow established patterns
+# Read each detected template's PRP and architecture
+for template in detected_templates:
+    read template["claude_md"]        # Architecture patterns
+    read template["template_file"]    # PRP structure
+    analyze template["type"]          # Component requirements
 ```
 
 ### Step 3: **Analyze Feature Requirements**
 - Parse the feature description
-- Identify scope and complexity
-- Determine required components (DB, API, UI) based on template
-- Estimate development phases using template patterns
+- Identify scope and complexity  
+- Determine which template types are needed (backend/frontend/mobile)
+- Map requirements to available templates
 
-### Step 4: **Generate Template-Specific PRP**
-- Use detected template's PRP structure
-- Fill in template-specific technology stack details
-- Follow architectural patterns from template's CLAUDE.md
-- Include template-specific validation commands and quality gates
-- Add appropriate file structure for detected template
-
-### Step 5: **Create Feature Structure**
+### Step 4: **Generate Feature Structure**
 ```bash
-# Create comprehensive feature directory structure
-mkdir -p PRPs/[feature-name]/{backend,frontend,images/{desktop,mobile,components,flows}}
+# Create feature directory in standardized structure
+mkdir -p features/[feature-name]/
+mkdir -p features/[feature-name]/telas/    # Visual references
 ```
 
-### Step 6: **Generate Template-Specific PRP Document**
-- Load the detected template's PRP structure
+### Step 5: **Generate Template-Specific PRP Documents**
+For each detected template type, generate:
+- `features/[feature-name]/contrato_api.md` - API contract specifications
+- `features/[feature-name]/backend.md` - Backend implementation (if backend template exists)
+- `features/[feature-name]/frontend.md` - Frontend implementation (if frontend template exists) 
+- `features/[feature-name]/mobile.md` - Mobile implementation (if mobile template exists)
+- `features/[feature-name]/telas/[arquivo.jpg]` - Visual mockups and references
+
+### Step 6: **Load Template Content and Generate**
+- Load each detected template's PRP structure
 - Fill in feature-specific details using template patterns
 - Include template-specific implementation blueprints
 - Add template-specific validation commands
-- Include multi-agent task breakdown for the template
+- Include multi-agent task breakdown for each template
 - Add technology-specific quality gates
 
 ## 📊 PRP Generation Logic
