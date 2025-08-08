@@ -85,7 +85,15 @@ for template in detected_templates:
 ```bash
 # Create feature directory in standardized structure
 mkdir -p features/[feature-name]/
-mkdir -p features/[feature-name]/telas/    # Visual references
+
+# Create /telas directory based on detected frontend type
+if mobile_flutter detected:
+    mkdir -p features/[feature-name]/telas/mobile/
+elif frontend_nextjs detected:
+    mkdir -p features/[feature-name]/telas/desktop/
+elif both mobile + frontend detected:
+    mkdir -p features/[feature-name]/telas/mobile/
+    mkdir -p features/[feature-name]/telas/desktop/
 ```
 
 ### Step 5: **Generate Template-Specific PRP Documents**
@@ -94,7 +102,7 @@ For each detected template type, generate:
 - `features/[feature-name]/backend.md` - Backend implementation (if backend template exists)
 - `features/[feature-name]/frontend.md` - Frontend implementation (if frontend template exists) 
 - `features/[feature-name]/mobile.md` - Mobile implementation (if mobile template exists)
-- `features/[feature-name]/telas/[arquivo.jpg]` - Visual mockups and references
+- `features/[feature-name]/telas/` - Empty directory for manual visual mockups (never auto-generate images)
 
 ### Step 6: **Load Template Content and Generate**
 - Load each detected template's PRP structure
@@ -211,21 +219,13 @@ features/[feature-name]/
 ├── backend.md                 # Backend implementation (if backend template detected)
 ├── frontend.md                # Frontend implementation (if frontend template detected)  
 ├── mobile.md                  # Mobile implementation (if mobile template detected)
-└── telas/                     # Visual design references (CRITICAL)
-    ├── desktop/               # Desktop mockups  
-    │   ├── [feature]-login.jpg     # Login screen design
-    │   ├── [feature]-dashboard.jpg # Main dashboard layout
-    │   └── [feature]-detail.jpg    # Feature detail screens
-    ├── mobile/                # Mobile designs
-    │   ├── [feature]-mobile.jpg    # Mobile screens
-    │   └── [feature]-mobile-flow.jpg # Mobile user flow
-    ├── components/            # Component-specific designs
-    │   ├── [feature]-buttons.jpg   # Button variations
-    │   ├── [feature]-forms.jpg     # Form designs
-    │   └── [feature]-cards.jpg     # Card component styles
-    └── flows/                 # User flow diagrams
-        ├── [feature]-user-journey.jpg   # Complete user journey
-        └── [feature]-interaction-flow.jpg # Detailed UI interactions
+└── telas/                     # Empty directory for manual visual mockups
+    ├── desktop/               # Created only if frontend_nextjs detected
+    └── mobile/                # Created only if mobile_flutter detected
+    
+# Note: telas/ directories are created empty
+# Visual mockups are added manually by developer as needed
+# PRP will read existing images if present, but never auto-generate them
 ```
 
 ## 🎯 Technology-Specific PRP Templates
