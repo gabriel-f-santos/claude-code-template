@@ -8,14 +8,22 @@
 import { UsersService } from '@/services/users.service.js';
 import { asyncHandler } from '@/utils/error-handler.js';
 import { quickValidation } from '@/utils/validators.js';
+import {
+  validateUserCreate,
+  validateUserLogin,
+  validateUserUpdate,
+  validateUserId,
+  validatePaginationQuery,
+  type UserCreateRequest,
+  type UserLoginRequest,
+  type UserUpdateRequest,
+  type UserIdParam,
+  type PaginationQuery
+} from '@/schemas/zod-users.schema.js';
 import type {
   FastifyInstanceWithDecorators,
   RouteHandler,
   AuthenticatedRouteHandler,
-  UserCreateRequest,
-  UserUpdateRequest,
-  UserLoginRequest,
-  PaginationQuery,
   IdParam
 } from '@/types/index.js';
 
@@ -32,18 +40,17 @@ export class UsersController {
    * GET /users - Get all users with pagination
    */
   public getUsers: RouteHandler<PaginationQuery> = asyncHandler(async (request, reply) => {
-    const result = await this.usersService.getUsers(request.query);
+    const query = validatePaginationQuery(request.query);
+    const result = await this.usersService.getUsers(query);
     reply.send(result);
   });
 
   /**
    * GET /users/:id - Get user by ID
    */
-  public getUserById: RouteHandler<unknown, IdParam> = asyncHandler(async (request, reply) => {
-    const { id } = request.params;
-    const userId = parseInt(id);
-    
-    const user = await this.usersService.getUserById(userId);
+  public getUserById: RouteHandler<unknown, UserIdParam> = asyncHandler(async (request, reply) => {
+    const { id } = validateUserId(request.params);
+    const user = await this.usersService.getUserById(id);
     reply.send(user);
   });
 
@@ -51,7 +58,8 @@ export class UsersController {
    * POST /users/register - Register new user
    */
   public createUser: RouteHandler<unknown, unknown, UserCreateRequest> = asyncHandler(async (request, reply) => {
-    const user = await this.usersService.createUser(request.body);
+    const userData = validateUserCreate(request.body);
+    const user = await this.usersService.createUser(userData);
     reply.code(201).send(user);
   });
 
@@ -59,8 +67,8 @@ export class UsersController {
    * POST /users/login - User login
    */
   public loginUser: RouteHandler<unknown, unknown, UserLoginRequest> = asyncHandler(async (request, reply) => {
-    // Validate login data
-    const { email, password } = quickValidation.login(request.body);
+    // Validate login data using Zod
+    const { email, password } = validateUserLogin(request.body);
 
     // Authenticate user
     const user = await this.usersService.authenticateUser(email, password);
@@ -81,22 +89,21 @@ export class UsersController {
   /**
    * PUT /users/:id - Update user
    */
-  public updateUser: RouteHandler<unknown, IdParam, UserUpdateRequest> = asyncHandler(async (request, reply) => {
-    const { id } = request.params;
-    const userId = parseInt(id);
+  public updateUser: RouteHandler<unknown, UserIdParam, UserUpdateRequest> = asyncHandler(async (request, reply) => {
+    const { id } = validateUserId(request.params);
+    const updateData = validateUserUpdate(request.body);
     
-    const user = await this.usersService.updateUser(userId, request.body);
+    const user = await this.usersService.updateUser(id, updateData);
     reply.send(user);
   });
 
   /**
    * DELETE /users/:id - Delete user
    */
-  public deleteUser: RouteHandler<unknown, IdParam> = asyncHandler(async (request, reply) => {
-    const { id } = request.params;
-    const userId = parseInt(id);
+  public deleteUser: RouteHandler<unknown, UserIdParam> = asyncHandler(async (request, reply) => {
+    const { id } = validateUserId(request.params);
     
-    await this.usersService.deleteUser(userId);
+    await this.usersService.deleteUser(id);
     reply.code(204).send();
   });
 

@@ -9,7 +9,9 @@
       "Bash(rmdir:*)",
       "Bash(rm:*)",
       "WebFetch(domain:docs.flutter.dev)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run type-check:*)"
     ],
     "deny": []
   }

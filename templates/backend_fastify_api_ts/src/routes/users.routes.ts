@@ -8,6 +8,18 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { UsersController } from '@/controllers/users.controller.js';
 import { usersSchemas } from '@/schemas/users.schema.js';
+import {
+  userCreateSchema,
+  userLoginSchema,
+  userUpdateSchema,
+  userIdParamSchema,
+  paginationQuerySchema
+} from '@/schemas/zod-users.schema.js';
+import {
+  createBodyValidationHook,
+  createParamsValidationHook,
+  createQueryValidationHook
+} from '@/utils/zod-validation.js';
 import type { FastifyInstanceWithDecorators } from '@/types/index.js';
 
 const usersRoutes: FastifyPluginAsync = async (fastify: FastifyInstanceWithDecorators) => {
@@ -20,7 +32,8 @@ const usersRoutes: FastifyPluginAsync = async (fastify: FastifyInstanceWithDecor
    * Perfect for vibecoding demos - creates a user in seconds!
    */
   fastify.post('/users/register', {
-    schema: usersSchemas.createUser
+    schema: usersSchemas.createUser,
+    preValidation: createBodyValidationHook(userCreateSchema)
   }, usersController.createUser);
 
   /**
@@ -28,7 +41,8 @@ const usersRoutes: FastifyPluginAsync = async (fastify: FastifyInstanceWithDecor
    * Returns JWT token for authentication
    */
   fastify.post('/users/login', {
-    schema: usersSchemas.loginUser
+    schema: usersSchemas.loginUser,
+    preValidation: createBodyValidationHook(userLoginSchema)
   }, usersController.loginUser);
 
   /**
@@ -36,7 +50,8 @@ const usersRoutes: FastifyPluginAsync = async (fastify: FastifyInstanceWithDecor
    * Great for testing and demonstrations
    */
   fastify.get('/users', {
-    schema: usersSchemas.getUsers
+    schema: usersSchemas.getUsers,
+    preValidation: createQueryValidationHook(paginationQuerySchema)
   }, usersController.getUsers);
 
   /**
@@ -44,7 +59,8 @@ const usersRoutes: FastifyPluginAsync = async (fastify: FastifyInstanceWithDecor
    * Simple and fast user lookup
    */
   fastify.get('/users/:id', {
-    schema: usersSchemas.getUser
+    schema: usersSchemas.getUser,
+    preValidation: createParamsValidationHook(userIdParamSchema)
   }, usersController.getUserById);
 
   /**
@@ -52,7 +68,11 @@ const usersRoutes: FastifyPluginAsync = async (fastify: FastifyInstanceWithDecor
    * Clean user update endpoint
    */
   fastify.put('/users/:id', {
-    schema: usersSchemas.updateUser
+    schema: usersSchemas.updateUser,
+    preValidation: [
+      createParamsValidationHook(userIdParamSchema),
+      createBodyValidationHook(userUpdateSchema)
+    ]
   }, usersController.updateUser);
 
   /**
@@ -60,7 +80,8 @@ const usersRoutes: FastifyPluginAsync = async (fastify: FastifyInstanceWithDecor
    * Simple user deletion
    */
   fastify.delete('/users/:id', {
-    schema: usersSchemas.deleteUser
+    schema: usersSchemas.deleteUser,
+    preValidation: createParamsValidationHook(userIdParamSchema)
   }, usersController.deleteUser);
 
   // Protected routes - require authentication
