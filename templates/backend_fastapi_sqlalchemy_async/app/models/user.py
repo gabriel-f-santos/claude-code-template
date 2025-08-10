@@ -1,19 +1,14 @@
 from datetime import datetime
-import uuid
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Boolean, DateTime, Text
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 from ..core.database import Base
+from ..security.identifiers import DualIdMixin
 
 
-class User(Base):
-    """Async User model for SQLAlchemy (email-only identification)."""
+class User(Base, DualIdMixin):
+    """Async User model for SQLAlchemy with dual ID pattern."""
     
     __tablename__ = "users"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    public_id = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False, index=True)
     email = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(100), nullable=True)

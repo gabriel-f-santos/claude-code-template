@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
-from uuid import UUID
 
 
 class UserBase(BaseModel):
@@ -22,7 +21,7 @@ class UserUpdate(BaseModel):
 
 class UserRead(UserBase):
     """Schema for reading user data (public info). Exposes only public_id (UUID)."""
-    public_id: UUID = Field(..., description="Public UUID identifier for external exposure")
+    public_id: str = Field(..., description="Public UUID identifier for external exposure")
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None

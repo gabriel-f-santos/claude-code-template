@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional, List
-from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -46,7 +45,7 @@ class UserService:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def get_user_by_public_id(session: AsyncSession, public_id: UUID) -> Optional[User]:
+    async def get_user_by_public_id(session: AsyncSession, public_id: str) -> Optional[User]:
         """Get user by public ID asynchronously."""
         stmt = select(User).where(User.public_id == public_id)
         result = await session.execute(stmt)
@@ -60,7 +59,7 @@ class UserService:
         return result.scalars().all()
 
     @staticmethod
-    async def update_user(session: AsyncSession, public_id: UUID, user_data: UserUpdate) -> Optional[User]:
+    async def update_user(session: AsyncSession, public_id: str, user_data: UserUpdate) -> Optional[User]:
         """Update user information asynchronously."""
         stmt = select(User).where(User.public_id == public_id)
         result = await session.execute(stmt)
@@ -85,7 +84,7 @@ class UserService:
         return db_user
 
     @staticmethod
-    async def delete_user(session: AsyncSession, public_id: UUID) -> bool:
+    async def delete_user(session: AsyncSession, public_id: str) -> bool:
         """Delete user asynchronously."""
         stmt = select(User).where(User.public_id == public_id)
         result = await session.execute(stmt)

@@ -1,9 +1,17 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import IntegrityError
 from .core.config import settings
 from .core.database import create_tables, close_async_engine
 from .api.users import router as users_router
 from .api.auth import router as auth_router
+from .security.errors import (
+    global_exception_handler,
+    http_exception_handler,
+    validation_exception_handler,
+    integrity_error_handler
+)
 
 
 @asynccontextmanager
@@ -27,6 +35,11 @@ def create_app() -> FastAPI:
         description="FastAPI + SQLAlchemy Async for rapid development and vibecoding sessions",
         lifespan=lifespan
     )
+
+    # Add global exception handlers
+    app.add_exception_handler(Exception, global_exception_handler)
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(IntegrityError, integrity_error_handler)
 
     # Include routers
     app.include_router(

@@ -1,5 +1,4 @@
 from typing import List
-from uuid import UUID
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.database import get_async_session
@@ -58,7 +57,7 @@ async def get_users(
 
 
 @router.get("/{public_id}", response_model=UserRead)
-async def get_user(public_id: UUID, session: AsyncSession = Depends(get_async_session)):
+async def get_user(public_id: str, session: AsyncSession = Depends(get_async_session)):
     """Get user by public ID."""
     user = await UserService.get_user_by_public_id(session, public_id)
     if not user:
@@ -71,7 +70,7 @@ async def get_user(public_id: UUID, session: AsyncSession = Depends(get_async_se
 
 @router.put("/{public_id}", response_model=UserRead)
 async def update_user(
-    public_id: UUID,
+    public_id: str,
     user_data: UserUpdate,
     current_user_email: str = Depends(get_current_user_email),
     session: AsyncSession = Depends(get_async_session)
@@ -83,7 +82,7 @@ async def update_user(
 
 @router.delete("/{public_id}")
 async def delete_user(
-    public_id: UUID,
+    public_id: str,
     current_user_email: str = Depends(get_current_user_email),
     session: AsyncSession = Depends(get_async_session)
 ):
