@@ -1,1 +1,0 @@
-# FastAPI SQLAlchemy Vibecoding Template
