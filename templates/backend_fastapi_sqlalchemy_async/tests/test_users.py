@@ -59,9 +59,8 @@ async def test_health_check(async_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_user_registration(async_client: AsyncClient):
-    """Test async user registration - Great for live demos!"""
+    """Test async user registration."""
     user_data = {
-        "username": "testuser",
         "email": "test@example.com",
         "password": "testpassword123"
     }
@@ -69,16 +68,15 @@ async def test_user_registration(async_client: AsyncClient):
     response = await async_client.post("/users/register", json=user_data)
     assert response.status_code == 201
     data = response.json()
-    assert data["username"] == user_data["username"]
     assert data["email"] == user_data["email"]
-    assert "id" in data
+    assert "public_id" in data
+    assert "hashed_password" not in data
 
 @pytest.mark.asyncio
 async def test_user_login(async_client: AsyncClient):
     """Test async user login flow."""
     # First register a user
     user_data = {
-        "username": "logintest",
         "email": "login@example.com", 
         "password": "loginpassword123"
     }
@@ -108,9 +106,8 @@ async def test_get_users(async_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_duplicate_email(async_client: AsyncClient):
-    """Test duplicate email registration - Async version."""
+    """Test duplicate email registration."""
     user_data = {
-        "username": "unique1",
         "email": "duplicate@example.com",
         "password": "testpassword123"
     }
@@ -121,7 +118,6 @@ async def test_duplicate_email(async_client: AsyncClient):
     
     # Second registration with same email should fail
     user_data2 = {
-        "username": "unique2",
         "email": "duplicate@example.com",  # Same email
         "password": "testpassword123"
     }
@@ -133,24 +129,16 @@ async def test_duplicate_email(async_client: AsyncClient):
 @pytest.mark.asyncio
 async def test_async_performance():
     """Test that demonstrates async performance benefits."""
-    # This test shows how async operations can be performed concurrently
     async with AsyncClient(app=app, base_url="http://test") as client:
-        # Create multiple users concurrently
         import asyncio
-        
         user_tasks = []
         for i in range(5):
             user_data = {
-                "username": f"perfuser{i}",
                 "email": f"perf{i}@example.com",
                 "password": "testpassword123"
             }
             task = client.post("/users/register", json=user_data)
             user_tasks.append(task)
-        
-        # Execute all requests concurrently
         responses = await asyncio.gather(*user_tasks, return_exceptions=True)
-        
-        # Verify successful concurrent operations
         success_count = sum(1 for r in responses if hasattr(r, 'status_code') and r.status_code == 201)
         assert success_count == 5

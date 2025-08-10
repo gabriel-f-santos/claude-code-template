@@ -8,6 +8,8 @@ Esta é uma **arquitetura simplificada, modular e altamente escalável** especif
 - 🔄 **Rapid prototyping** (prototipagem rápida)
 - 📺 **Live demonstrations** (demonstrações ao vivo)
 
+⚠️ **Security-First Approach**: This template implements the industry-standard **Dual ID System** (integer PK + UUID public_id) for optimal performance and security, preventing ID enumeration attacks while maintaining database performance.
+
 ## 🏗️ Estrutura Simplificada
 
 ```
@@ -60,25 +62,73 @@ alembic upgrade head
 
 ## 🎯 Exemplo Prático: API Users
 
-### 1. Model (SQLAlchemy)
+## 🔒 Dual ID System: Security + Performance
+
+### ✅ Optimal Database Pattern (Industry Standard)
+```sql
+-- ✅ Optimal Dual ID Pattern (used by GitHub, Stripe, etc.)
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,           -- Internal performance PK
+  public_id UUID UNIQUE NOT NULL,  -- External API security
+  username VARCHAR(50),
+  email VARCHAR(100)
+);
+```
+
+### 🔒 Security Benefits:
+- **External APIs only expose public_id (UUID)**
+- **Prevents ID enumeration attacks** (/users/1, /users/2, etc.)
+- **Impossible to guess valid IDs** or estimate database size
+- **Industry standard** used by GitHub, Stripe, AWS, etc.
+
+### ⚡ Performance Benefits:
+- **Internal operations use integer PK** for optimal performance
+- **Sequential integers**: optimal B-tree indexing, minimal fragmentation
+- **JOINs are 4x faster** (int vs UUID)
+- **Memory efficient**: less RAM for index caching
+- **Disk I/O optimized**: fewer pages to read/write
+
+### 🏗️ Architecture Pattern:
+```python
+class User(Base):
+    # Internal PK for performance - never exposed
+    id = Column(Integer, primary_key=True, index=True)
+    # Public UUID for external API - secure against enumeration  
+    public_id = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4, index=True)
+    # ... other fields
+```
+
+### 1. Model (SQLAlchemy with Dual ID System)
 ```python
 # app/models/user.py
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+import uuid
+from sqlalchemy import Column, String, Boolean, DateTime, Integer
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 from ..core.database import Base
 
 class User(Base):
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True, index=True)
+    # Dual ID System for optimal performance and security
+    id = Column(Integer, primary_key=True, index=True)  # Internal PK for performance
+    public_id = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4, index=True)  # External API security
+    
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    def __repr__(self):
+        return f"<User(id={self.id}, public_id={self.public_id}, username='{self.username}')>"
 ```
 
 ### 2. Schemas (Pydantic Validation)
 ```python
 # app/schemas/user.py
+import uuid
+from datetime import datetime
 from pydantic import BaseModel, EmailStr
 
 class UserCreate(BaseModel):
@@ -87,29 +137,43 @@ class UserCreate(BaseModel):
     password: str
 
 class UserRead(BaseModel):
-    id: int
+    id: uuid.UUID
     username: str
     email: EmailStr
     is_active: bool
+    created_at: datetime
     
     class Config:
         from_attributes = True
 ```
 
-### 3. Service (Business Logic)
+### 3. Service (Business Logic with Dual ID System)
 ```python
 # app/services/user_service.py
+import uuid
 from sqlalchemy.orm import Session
+from ..core.security import get_password_hash
 
 class UserService:
     @staticmethod
     def create_user(db: Session, user_data: UserCreate) -> User:
-        # Validations + hashing + create
+        # Validations + hashing + create with dual ID system
         hashed_password = get_password_hash(user_data.password)
-        db_user = User(username=user_data.username, ...)
+        db_user = User(
+            public_id=uuid.uuid4(),  # External UUID for API security
+            username=user_data.username, 
+            email=user_data.email,
+            hashed_password=hashed_password
+        )
         db.add(db_user)
         db.commit()
+        db.refresh(db_user)
         return db_user
+    
+    @staticmethod
+    def get_user_by_public_id(db: Session, public_id: uuid.UUID) -> Optional[User]:
+        # External API uses public_id for security
+        return db.query(User).filter(User.public_id == public_id).first()
 ```
 
 ### 4. API Routes (FastAPI Router)
@@ -450,15 +514,17 @@ REQUISITOS TÉCNICOS:
 
 FUNCIONALIDADES:
 - GET /products (list with pagination, filters)
-- GET /products/{id} (get by ID)
+- GET /products/{public_id} (get by public UUID)
 - POST /products (create with validation)
-- PUT /products/{id} (update)
-- DELETE /products/{id} (delete)
-- GET /products/category/{category_id} (products by category)
+- PUT /products/{public_id} (update by public UUID)
+- DELETE /products/{public_id} (delete by public UUID)
+- GET /products/category/{category_public_id} (products by category public UUID)
 
 SQLALCHEMY MODEL NECESSÁRIO:
 ```python
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey
+import uuid
+from sqlalchemy import Column, String, Float, Boolean, DateTime, Text, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..core.database import Base
@@ -466,17 +532,54 @@ from ..core.database import Base
 class Product(Base):
     __tablename__ = "products"
     
-    id = Column(Integer, primary_key=True, index=True)
+    # Dual ID System for optimal performance and security
+    id = Column(Integer, primary_key=True, index=True)  # Internal PK for performance
+    public_id = Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4, index=True)  # External API security
+    
     name = Column(String(100), nullable=False, index=True)
     description = Column(Text)
     price = Column(Float, nullable=False, index=True)
-    category_id = Column(Integer, ForeignKey("categories.id"))
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False, index=True)  # Internal FK for performance
+    category_public_id = Column(UUID(as_uuid=True), nullable=False, index=True)  # External reference
     in_stock = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
-    # Relationships
+    # Relationships use internal IDs for performance
     category = relationship("Category", back_populates="products")
+    
+    def __repr__(self):
+        return f"<Product(id={self.id}, public_id={self.public_id}, name='{self.name}')>"
+```
+
+**🔒 Security Benefits:**
+- External APIs only expose public_id (UUID)
+- Prevents ID enumeration attacks (/users/1, /users/2, etc.)
+- Impossible to guess valid IDs or estimate database size
+- Industry standard used by GitHub, Stripe, AWS
+
+**⚡ Performance Benefits:**
+- Internal operations use integer PK for optimal performance
+- Sequential integers: optimal B-tree indexing, minimal fragmentation
+- JOINs are 4x faster (int vs UUID)
+- Memory efficient: less RAM for index caching
+- Disk I/O optimized: fewer pages to read/write
+
+### 🔄 Migration Strategy for Existing Applications:
+```sql
+-- Step 1: Add public_id column to existing table
+ALTER TABLE users ADD COLUMN public_id UUID UNIQUE;
+
+-- Step 2: Generate UUIDs for existing records
+UPDATE users SET public_id = gen_random_uuid() WHERE public_id IS NULL;
+
+-- Step 3: Make public_id NOT NULL
+ALTER TABLE users ALTER COLUMN public_id SET NOT NULL;
+
+-- Step 4: Add index for performance
+CREATE INDEX idx_users_public_id ON users(public_id);
+
+-- Step 5: Update application code to use public_id for external APIs
 ```
 
 PADRÕES SQLALCHEMY VIBECODING:
@@ -562,16 +665,19 @@ Nova Feature?
 
 ### 📐 **SQLAlchemy Architectural Rules (NEVER BREAK)**
 
-#### **✅ ALWAYS DO:**
-1. **Model structure**: Use SQLAlchemy models para todos tables
+#### **✅ ALWAYS DO (SECURITY-FIRST):**
+1. **Model structure**: Use SQLAlchemy models para todos tables WITH dual ID system
 2. **Proper relationships**: ForeignKey + relationship() bem definidos
 3. **Database sessions**: Use Depends(get_db) sempre
 4. **Migrations**: Alembic para todas mudanças de schema
 5. **Pydantic validation**: Schemas para todos inputs/outputs
-6. **Service pattern**: Business logic separada em services
-7. **Comprehensive tests**: Teste todos cenários com database real
+6. **Service pattern**: Business logic separada em services WITH security logging
+7. **Comprehensive tests**: Teste todos cenários including security scenarios
+8. **Security logging**: log_security_event() for all sensitive operations
+9. **Secure error handling**: Generic errors in production, detailed in development
+10. **Never expose internals**: No database schema, stack traces, or sensitive data in responses
 
-#### **❌ NEVER DO:**
+#### **❌ NEVER DO (SECURITY VIOLATIONS):**
 1. **Skip migrations**: SQLAlchemy sem Alembic é arriscado
 2. **Direct session access**: Use sempre dependency injection
 3. **Missing relationships**: Foreign keys sem relationship()
@@ -579,6 +685,11 @@ Nova Feature?
 5. **Skip validation**: Todo input deve ser validado
 6. **Skip error handling**: Trate todos os casos de database
 7. **No tests**: Toda feature precisa de testes com DB
+8. **Expose internal errors**: NEVER return database errors, stack traces, or internal details to users
+9. **Log sensitive data**: NEVER log passwords, tokens, credit cards, or PII
+10. **Use sequential IDs in APIs**: Always use public_id (UUID) in external APIs
+11. **Skip security logging**: All sensitive operations must be logged
+12. **Ignore environment**: Different error handling for dev vs production
 
 ### 🔄 **SQLAlchemy Reasoning Process**
 
@@ -638,6 +749,8 @@ from ..models.feature import Feature
 from ..schemas.feature import FeatureCreate, FeatureUpdate
 from fastapi import HTTPException
 
+import uuid
+
 class FeatureService:
     @staticmethod
     def create_feature(db: Session, feature_data: FeatureCreate) -> Feature:
@@ -646,8 +759,11 @@ class FeatureService:
         if existing:
             raise HTTPException(status_code=400, detail="Feature already exists")
         
-        # Create new feature
-        db_feature = Feature(**feature_data.model_dump())
+        # Create new feature with dual ID system
+        db_feature = Feature(
+            public_id=uuid.uuid4(),  # External UUID for API
+            **feature_data.model_dump()
+        )
         db.add(db_feature)
         db.commit()
         db.refresh(db_feature)
@@ -658,12 +774,14 @@ class FeatureService:
         return db.query(Feature).offset(skip).limit(limit).all()
     
     @staticmethod
-    def get_feature_by_id(db: Session, feature_id: int) -> Optional[Feature]:
-        return db.query(Feature).filter(Feature.id == feature_id).first()
+    def get_feature_by_public_id(db: Session, public_id: uuid.UUID) -> Optional[Feature]:
+        # External API uses public_id for security
+        return db.query(Feature).filter(Feature.public_id == public_id).first()
     
     @staticmethod
-    def update_feature(db: Session, feature_id: int, feature_data: FeatureUpdate) -> Optional[Feature]:
-        db_feature = db.query(Feature).filter(Feature.id == feature_id).first()
+    def update_feature(db: Session, public_id: uuid.UUID, feature_data: FeatureUpdate) -> Optional[Feature]:
+        # External API uses public_id
+        db_feature = db.query(Feature).filter(Feature.public_id == public_id).first()
         if not db_feature:
             return None
             
@@ -676,8 +794,9 @@ class FeatureService:
         return db_feature
     
     @staticmethod
-    def delete_feature(db: Session, feature_id: int) -> bool:
-        db_feature = db.query(Feature).filter(Feature.id == feature_id).first()
+    def delete_feature(db: Session, public_id: uuid.UUID) -> bool:
+        # External API uses public_id
+        db_feature = db.query(Feature).filter(Feature.public_id == public_id).first()
         if not db_feature:
             return False
             
@@ -688,6 +807,7 @@ class FeatureService:
 
 #### **API Router Template**  
 ```python
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List
@@ -712,30 +832,30 @@ def get_features(
     """Get list of features with pagination"""
     return FeatureService.get_features(db, skip=skip, limit=limit)
 
-@router.get("/{feature_id}", response_model=FeatureRead)
-def get_feature(feature_id: int, db: Session = Depends(get_db)):
-    """Get a specific feature by ID"""
-    feature = FeatureService.get_feature_by_id(db, feature_id)
+@router.get("/{public_id}", response_model=FeatureRead)
+def get_feature(public_id: uuid.UUID, db: Session = Depends(get_db)):  # External API uses public_id for security
+    """Get a specific feature by public UUID"""
+    feature = FeatureService.get_feature_by_public_id(db, public_id)
     if not feature:
         raise HTTPException(status_code=404, detail="Feature not found")
     return feature
 
-@router.put("/{feature_id}", response_model=FeatureRead)
+@router.put("/{public_id}", response_model=FeatureRead)
 def update_feature(
-    feature_id: int, 
+    public_id: uuid.UUID,  # External API uses public_id for security
     feature_data: FeatureUpdate, 
     db: Session = Depends(get_db)
 ):
     """Update an existing feature"""
-    feature = FeatureService.update_feature(db, feature_id, feature_data)
+    feature = FeatureService.update_feature(db, public_id, feature_data)
     if not feature:
         raise HTTPException(status_code=404, detail="Feature not found")
     return feature
 
-@router.delete("/{feature_id}")
-def delete_feature(feature_id: int, db: Session = Depends(get_db)):
+@router.delete("/{public_id}")
+def delete_feature(public_id: uuid.UUID, db: Session = Depends(get_db)):  # External API uses public_id for security
     """Delete a feature"""
-    success = FeatureService.delete_feature(db, feature_id)
+    success = FeatureService.delete_feature(db, public_id)
     if not success:
         raise HTTPException(status_code=404, detail="Feature not found")
     return {"message": "Feature deleted successfully"}
@@ -743,7 +863,9 @@ def delete_feature(feature_id: int, db: Session = Depends(get_db)):
 
 #### **SQLAlchemy Model Template**
 ```python
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey
+import uuid
+from sqlalchemy import Column, String, Boolean, DateTime, Text, ForeignKey, Integer
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..core.database import Base
@@ -757,7 +879,7 @@ class FeatureStatus(str, Enum):
 class Feature(Base):
     __tablename__ = "features"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String(100), unique=True, index=True, nullable=False)
     description = Column(Text)
     status = Column(String(20), default=FeatureStatus.ACTIVE.value, nullable=False)
@@ -774,6 +896,7 @@ class Feature(Base):
 
 #### **Pydantic Schema Template**
 ```python
+import uuid
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
@@ -800,7 +923,7 @@ class FeatureUpdate(BaseModel):
     priority: Optional[int] = Field(None, ge=1, le=5)
 
 class FeatureRead(FeatureBase):
-    id: int
+    id: uuid.UUID
     created_at: datetime
     updated_at: datetime
     

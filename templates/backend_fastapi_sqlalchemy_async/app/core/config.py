@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    GROQ_MODEL: str ="llama-3.1-70b-versatile"
+    GROQ_API_KEY: str = "your-groq-api"
 
 
 settings = Settings()

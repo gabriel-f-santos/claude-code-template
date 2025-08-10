@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from beanie import PydanticObjectId
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -23,10 +24,12 @@ class UserUpdate(BaseModel):
 
 class UserRead(UserBase):
     """Schema for reading user data (public info)."""
-    id: str = Field(..., description="User's unique identifier")
+    id: PydanticObjectId = Field(..., description="User's unique identifier (secure ObjectId)")
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
+    # Note: MongoDB ObjectId is already secure (similar to UUID) and performant
 
     class Config:
         from_attributes = True

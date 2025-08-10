@@ -1,3 +1,4 @@
+import uuid
 from typing import List
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from sqlalchemy.orm import Session
@@ -50,10 +51,10 @@ def get_users(
     return users
 
 
-@router.get("/{user_id}", response_model=UserRead)
-def get_user(user_id: int, db: Session = Depends(get_db)):
-    """👤 Get user by ID"""
-    user = UserService.get_user_by_id(db, user_id)
+@router.get("/{public_id}", response_model=UserRead)
+def get_user(public_id: uuid.UUID, db: Session = Depends(get_db)):
+    """👤 Get user by public_id (secure)"""
+    user = UserService.get_user_by_public_id(db, public_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -62,26 +63,26 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
     return user
 
 
-@router.put("/{user_id}", response_model=UserRead)
+@router.put("/{public_id}", response_model=UserRead)
 def update_user(
-    user_id: int,
+    public_id: uuid.UUID,
     user_data: UserUpdate,
     db: Session = Depends(get_db),
     current_user_email: str = Depends(get_current_user_email)
 ):
-    """✏️ Update user information"""
+    """✏️ Update user information (secure)"""
     # Optional: Add permission check here
-    user = UserService.update_user(db, user_id, user_data)
+    user = UserService.update_user(db, public_id, user_data)
     return user
 
 
-@router.delete("/{user_id}")
+@router.delete("/{public_id}")
 def delete_user(
-    user_id: int,
+    public_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user_email: str = Depends(get_current_user_email)
 ):
-    """🗑️ Delete user"""
+    """🗑️ Delete user (secure)"""
     # Optional: Add permission check here
-    success = UserService.delete_user(db, user_id)
+    success = UserService.delete_user(db, public_id)
     return {"message": "User deleted successfully"}

@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "FastAPI Beanie Vibecoding"
     VERSION: str = "1.0.0"
     DEBUG: bool = True
+    ENVIRONMENT: str = "development"  # development, staging, production
     
     # Database
     MONGODB_URL: str = "mongodb://localhost:27017"

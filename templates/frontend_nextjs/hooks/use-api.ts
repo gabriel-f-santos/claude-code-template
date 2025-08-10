@@ -6,46 +6,46 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api, type User, type Product, type LoginRequest, type UserCreateRequest, type ProductCreateRequest } from '@/lib/api';
+import { api, type User, type UserLogin, type UserRegister, type AuthResponse, type UserUpdate, type PasswordChange } from '@/lib/api';
 import { authStorage } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner'; // We'll add this package
+import { useAuth } from '@/store/auth-store';
+
+// Simple toast implementation (can be replaced with a proper toast library)
+const toast = {
+  success: (message: string) => console.log('✅ Success:', message),
+  error: (message: string) => console.error('❌ Error:', message),
+};
 
 // Query Keys - Centralized for consistency
 export const queryKeys = {
+  // Authentication
+  auth: ['auth'] as const,
+  currentUser: () => [...queryKeys.auth, 'me'] as const,
+  
+  // Users
   users: ['users'] as const,
   usersList: (params?: any) => [...queryKeys.users, 'list', params] as const,
-  user: (id: number) => [...queryKeys.users, id] as const,
-  currentUser: () => [...queryKeys.users, 'me'] as const,
-  
-  products: ['products'] as const,
-  productsList: (params?: any) => [...queryKeys.products, 'list', params] as const,
-  product: (id: number) => [...queryKeys.products, id] as const,
-  productCategories: () => [...queryKeys.products, 'categories'] as const,
+  user: (public_id: string) => [...queryKeys.users, public_id] as const,
 };
 
 // Auth Hooks
 export function useLogin() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { login } = useAuth();
 
   return useMutation({
-    mutationFn: (credentials: LoginRequest) => api.auth.login(credentials),
-    onSuccess: (data) => {
-      // Store token
-      authStorage.setToken(data.token);
+    mutationFn: (credentials: UserLogin) => api.auth.login(credentials),
+    onSuccess: (data: AuthResponse) => {
+      // Update Zustand store
+      login(data.user, data.access_token);
       
       // Update cache with user data
       queryClient.setQueryData(queryKeys.currentUser(), data.user);
       
-      // Show success message
-      toast.success('Login successful!');
-      
       // Redirect to dashboard
       router.push('/dashboard');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Login failed');
     },
   });
 }
@@ -54,13 +54,10 @@ export function useRegister() {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: (userData: UserCreateRequest) => api.auth.register(userData),
+    mutationFn: (userData: UserRegister) => api.auth.register(userData),
     onSuccess: () => {
-      toast.success('Registration successful! Please login.');
-      router.push('/login');
-    },
-    onError: (error: any) => {
-      toast.error(error.message || 'Registration failed');
+      // Redirect to login page
+      router.push('/login?message=registration-success');
     },
   });
 }
@@ -68,15 +65,25 @@ export function useRegister() {
 export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { logout } = useAuth();
 
   return useMutation({
-    mutationFn: () => Promise.resolve(api.auth.logout()),
+    mutationFn: () => api.auth.logout(),
     onSuccess: () => {
+      // Update Zustand store
+      logout();
+      
       // Clear all cached data
       queryClient.clear();
       
-      toast.success('Logged out successfully');
-      router.push('/login');
+      // Redirect to home
+      router.push('/');
+    },
+    onError: () => {
+      // Even if API call fails, logout locally
+      logout();
+      queryClient.clear();
+      router.push('/');
     },
   });
 }
@@ -88,6 +95,40 @@ export function useCurrentUser() {
     enabled: authStorage.isAuthenticated(),
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  const { updateUser } = useAuth();
+
+  return useMutation({
+    mutationFn: (userData: UserUpdate) => api.auth.updateProfile(userData),
+    onSuccess: (updatedUser) => {
+      // Update Zustand store
+      updateUser(updatedUser);
+      
+      // Update cache
+      queryClient.setQueryData(queryKeys.currentUser(), updatedUser);
+    },
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (passwordData: PasswordChange) => api.auth.changePassword(passwordData),
+  });
+}
+
+export function useRefreshToken() {
+  const { updateUser } = useAuth();
+  
+  return useMutation({
+    mutationFn: () => api.auth.refreshToken(),
+    onSuccess: (data) => {
+      // Update token in storage
+      authStorage.setToken(data.access_token);
+    },
   });
 }
 
@@ -104,7 +145,7 @@ export function useUsers(params?: {
   });
 }
 
-export function useUser(id: number) {
+export function useUser(id: string) {
   return useQuery({
     queryKey: queryKeys.user(id),
     queryFn: () => api.users.getById(id),
@@ -114,42 +155,30 @@ export function useUser(id: number) {
 
 export function useUpdateUser() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: ({ id, userData }: { id: number; userData: any }) => 
-      api.users.update(id, userData),
-    onSuccess: (updatedUser) => {
-      // Update user in cache
-      queryClient.setQueryData(queryKeys.user(updatedUser.id), updatedUser);
-      
-      // Invalidate users list to refetch
+    mutationFn: ({ public_id, userData }: { public_id: string; userData: Partial<User> }) => 
+      api.users.update(public_id, userData as any),
+    onSuccess: (updatedUser: User) => {
+      queryClient.setQueryData(queryKeys.user(updatedUser.public_id), updatedUser);
       queryClient.invalidateQueries({ queryKey: queryKeys.users });
-      
-      toast.success('User updated successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update user');
-    },
+    }
   });
 }
 
 export function useDeleteUser() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (id: number) => api.users.delete(id),
-    onSuccess: (_, deletedId) => {
-      // Remove user from cache
+    mutationFn: (public_id: string) => api.users.delete(public_id),
+    onSuccess: (_: void, deletedId: string) => {
       queryClient.removeQueries({ queryKey: queryKeys.user(deletedId) });
-      
-      // Invalidate users list
       queryClient.invalidateQueries({ queryKey: queryKeys.users });
-      
-      toast.success('User deleted successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete user');
-    },
+    }
   });
 }
 
@@ -197,42 +226,34 @@ export function useCreateProduct() {
 
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: ({ id, productData }: { id: number; productData: any }) => 
+    mutationFn: ({ id, productData }: { id: number; productData: Partial<ProductCreateRequest> }) => 
       api.products.update(id, productData),
-    onSuccess: (updatedProduct) => {
-      // Update product in cache
+    onSuccess: (updatedProduct: Product) => {
       queryClient.setQueryData(queryKeys.product(updatedProduct.id), updatedProduct);
-      
-      // Invalidate products list
       queryClient.invalidateQueries({ queryKey: queryKeys.products });
       
       toast.success('Product updated successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update product');
-    },
+    }
   });
 }
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: (id: number) => api.products.delete(id),
-    onSuccess: (_, deletedId) => {
-      // Remove product from cache
+    onSuccess: (_: void, deletedId: number) => {
       queryClient.removeQueries({ queryKey: queryKeys.product(deletedId) });
-      
-      // Invalidate products list
       queryClient.invalidateQueries({ queryKey: queryKeys.products });
       
       toast.success('Product deleted successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete product');
-    },
+    }
   });
 }
 
@@ -246,35 +267,25 @@ export function useProductCategories() {
 
 export function useUpdateProductStock() {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: ({ id, inStock }: { id: number; inStock: boolean }) => 
       api.products.updateStock(id, inStock),
-    onSuccess: (updatedProduct) => {
-      // Update product in cache
+    onSuccess: (updatedProduct: Product) => {
       queryClient.setQueryData(queryKeys.product(updatedProduct.id), updatedProduct);
-      
-      // Invalidate products list
       queryClient.invalidateQueries({ queryKey: queryKeys.products });
       
       toast.success(`Product ${updatedProduct.inStock ? 'marked as in stock' : 'marked as out of stock'}`);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update product stock');
-    },
+    }
   });
 }
 
-// Email/Username validation hooks
+// Email validation hook
 export function useCheckEmail() {
   return useMutation({
-    mutationFn: (email: string) => api.users.checkEmail(email),
-  });
-}
-
-export function useCheckUsername() {
-  return useMutation({
-    mutationFn: (username: string) => api.users.checkUsername(username),
+    mutationFn: async (email: string) => ({ exists: false }), // Placeholder - implement if needed
   });
 }
 

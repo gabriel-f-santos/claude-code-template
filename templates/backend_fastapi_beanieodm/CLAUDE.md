@@ -8,6 +8,8 @@ Esta é uma **arquitetura simplificada, modular e altamente escalável** especif
 - 🔄 **Rapid prototyping** (prototipagem rápida)
 - 📺 **Live demonstrations** (demonstrações ao vivo)
 
+⚠️ **Security-First Approach**: This template leverages **MongoDB ObjectId's natural security and performance** - no dual ID system needed! ObjectId prevents enumeration attacks while maintaining optimal performance, making it the perfect solution for document databases.
+
 ## 🏗️ Estrutura Simplificada
 
 ```
@@ -56,27 +58,102 @@ cp .env.example .env
 
 ## 🎯 Exemplo Prático: API Users
 
-### 1. Model (Beanie Document)
+## 🔒 MongoDB ObjectId: Natural Security + Performance
+
+### ✅ Why MongoDB ObjectId is Perfect (No Dual ID Needed)
+
+**🔒 Security Benefits:**
+- **12-byte ObjectId prevents enumeration attacks** naturally
+- **Impossible to guess valid IDs** (contains timestamp + machine + counter)
+- **No sequential patterns** like /users/1, /users/2, etc.
+- **Globally unique across distributed systems**
+
+**⚡ Performance Benefits:**
+- **Native MongoDB indexing** optimized for ObjectId
+- **Efficient storage**: 12 bytes vs 16 bytes (UUID)
+- **Natural sharding key** for horizontal scaling
+- **Built-in timestamp** for sorting by creation time
+
+**🏗️ MongoDB ObjectId Structure:**
+```
+ObjectId = 4-byte timestamp + 5-byte machine/process + 3-byte counter
+Example: 507f1f77bcf86cd799439011
+```
+
+### 🔄 Database ID Comparison: Why MongoDB ObjectId Wins
+
+| Aspect | Relational DB (Dual ID) | MongoDB ObjectId |
+|--------|-------------------------|------------------|
+| **Security** | Need UUID overlay for safety | ✅ Secure by design |
+| **Performance** | Integer PK fast, UUID slow | ✅ Single optimized field |
+| **Storage** | 4 bytes (int) + 16 bytes (UUID) | ✅ 12 bytes total |
+| **Indexing** | Need 2 separate indexes | ✅ Single native index |
+| **Complexity** | Dual field management | ✅ Simple single field |
+| **API Design** | Hide internal, expose external | ✅ One ID for everything |
+
+### 🎯 MongoDB ObjectId = Best of Both Worlds:
+- **Relational DBs**: Sequential integers expose enumeration risk → need UUID overlay
+- **MongoDB**: ObjectId already secure AND performant → perfect as-is!
+- **No dual ID complexity needed** - ObjectId serves both purposes optimally
+
+### 1. Secure Model (Beanie Document with ObjectId Security & Logging)
 ```python
 # app/models/user.py
-from beanie import Document
-from pydantic import EmailStr, Field
+from beanie import Document, PydanticObjectId
+from pydantic import EmailStr, Field, validator
+from datetime import datetime
+from typing import Optional
+from ..core.logging import log_security_event
 
 class User(Document):
+    id: PydanticObjectId = Field(default_factory=PydanticObjectId, alias="_id")
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr = Field(..., unique=True)
     hashed_password: str
     is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    last_login: Optional[datetime] = None
+    login_attempts: int = Field(default=0)
     
     class Settings:
         name = "users"
-        indexes = ["email", "username"]
+        indexes = [
+            "email", 
+            "username", 
+            "is_active",
+            "created_at",
+            [("email", 1), ("is_active", 1)]  # Compound index for authentication
+        ]
+    
+    @validator('username')
+    def validate_username(cls, v):
+        """Validate username with security constraints"""
+        if not v.replace('_', '').replace('-', '').isalnum():
+            raise ValueError('Username can only contain letters, numbers, hyphens and underscores')
+        return v.lower().strip()
+    
+    def to_dict_secure(self):
+        """Return dictionary representation with only safe fields"""
+        return {
+            "id": str(self.id),  # ObjectId is naturally secure
+            "username": self.username,
+            "email": self.email,
+            "is_active": self.is_active,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_login": self.last_login.isoformat() if self.last_login else None
+        }
+    
+    def __repr__(self):
+        # SECURE: Only include safe data in repr (no sensitive info)
+        return f"<User(id={self.id}, username='{self.username}')>"
 ```
 
 ### 2. Schemas (Pydantic Validation)
 ```python
 # app/schemas/user.py
+from beanie import PydanticObjectId
 from pydantic import BaseModel, EmailStr
+from datetime import datetime
 
 class UserCreate(BaseModel):
     username: str
@@ -84,21 +161,30 @@ class UserCreate(BaseModel):
     password: str
 
 class UserRead(BaseModel):
-    id: str
+    id: PydanticObjectId
     username: str
     email: EmailStr
     is_active: bool
+    created_at: datetime
 ```
 
 ### 3. Service (Business Logic)
 ```python
 # app/services/user_service.py
+from beanie import PydanticObjectId
+from ..core.security import get_password_hash
+from ..models.user import User
+
 class UserService:
     @staticmethod
     async def create_user(user_data: UserCreate) -> User:
-        # Validations + hashing + create
+        # Validations + hashing + create with PydanticObjectId
         hashed_password = get_password_hash(user_data.password)
-        user = User(username=user_data.username, ...)
+        user = User(
+            username=user_data.username,
+            email=user_data.email,
+            hashed_password=hashed_password
+        )
         await user.insert()
         return user
 ```
@@ -382,24 +468,26 @@ REQUISITOS TÉCNICOS:
 
 FUNCIONALIDADES:
 - GET /products (list with pagination, filters)
-- GET /products/{id} (get by ID)
+- GET /products/{product_id} (get by ObjectId - naturally secure)
 - POST /products (create with validation)
-- PUT /products/{id} (update)
-- DELETE /products/{id} (delete)
+- PUT /products/{product_id} (update by ObjectId - naturally secure)
+- DELETE /products/{product_id} (delete by ObjectId - naturally secure)
 - GET /products/search (search by name/category)
 
 BEANIE DOCUMENT NECESSÁRIO:
 ```python
-from beanie import Document, Indexed
+from beanie import Document, Indexed, PydanticObjectId
 from pydantic import Field
 from typing import Optional
 from datetime import datetime
 
 class Product(Document):
+    id: PydanticObjectId = Field(default_factory=PydanticObjectId, alias="_id")
     name: Indexed(str) = Field(..., min_length=2, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     price: float = Field(..., gt=0)
     category: Indexed(str) = Field(..., min_length=2, max_length=50)
+    category_id: PydanticObjectId = Field(..., description="Reference to category document")
     in_stock: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -409,13 +497,43 @@ class Product(Document):
         indexes = [
             [("name", 1), ("category", 1)],  # Compound index
             "price",
-            "created_at"
+            "created_at",
+            "category_id"
         ]
+    
+    def __repr__(self):
+        return f"<Product(id={self.id}, name='{self.name}')>"
+```
+
+**🔒 Security Benefits of MongoDB ObjectId:**
+- **Natural enumeration protection**: No sequential patterns like /products/1, /products/2
+- **Cryptographically strong**: Timestamp + machine + process + counter combination
+- **Impossible to guess**: Each ObjectId is practically unique across time and space  
+- **No performance penalty**: Native MongoDB optimization, unlike UUID overlays
+- **Type safety**: PydanticObjectId provides full validation and serialization
+
+**⚡ Performance Advantages Over Dual ID Systems:**
+- **Single field indexing**: No need for separate internal/external ID indexes
+- **Optimal storage**: 12 bytes vs 20+ bytes (int + UUID)
+- **Native aggregation support**: MongoDB pipelines optimized for ObjectId
+- **Sharding ready**: Natural distribution key for horizontal scaling
+- **Memory efficient**: Less overhead in document caching
+
+### 🏗️ Why MongoDB ObjectId is the Gold Standard:
+```python
+class Product(Document):
+    # ObjectId serves BOTH purposes perfectly:
+    # 1. Security: Non-enumerable, unpredictable
+    # 2. Performance: Native MongoDB optimization
+    id: PydanticObjectId = Field(default_factory=PydanticObjectId, alias=\"_id\")
+    # No dual ID complexity needed!
 ```
 
 PADRÕES BEANIE VIBECODING:
 - Service class com métodos async estáticos
 - Document operations com Beanie syntax
+- **ObjectId natural security**: No dual ID system needed
+- MongoDB native performance optimization
 - Proper error handling com HTTPException
 - Indexes para performance
 - Testes usando motor test database
@@ -574,7 +692,7 @@ class FeatureService:
     @staticmethod
     async def create_feature(feature_data: FeatureCreate) -> Feature:
         feature_dict = feature_data.model_dump()
-        feature = Feature(**feature_dict)
+        feature = Feature(**feature_dict)  # PydanticObjectId auto-generated
         await feature.insert()
         return feature
     
@@ -636,24 +754,24 @@ async def get_features(
     return [FeatureRead.model_validate(feature.model_dump()) for feature in features]
 
 @router.get("/{feature_id}", response_model=FeatureRead)
-async def get_feature(feature_id: PydanticObjectId):
-    """Get a specific feature by ID"""
+async def get_feature(feature_id: PydanticObjectId):  # ObjectId naturally secure - no enumeration risk
+    """Get a specific feature by ObjectId (secure by design)"""
     feature = await FeatureService.get_feature_by_id(feature_id)
     if not feature:
         raise HTTPException(status_code=404, detail="Feature not found")
     return FeatureRead.model_validate(feature.model_dump())
 
 @router.put("/{feature_id}", response_model=FeatureRead)
-async def update_feature(feature_id: PydanticObjectId, feature_data: FeatureUpdate):
-    """Update an existing feature"""
+async def update_feature(feature_id: PydanticObjectId, feature_data: FeatureUpdate):  # ObjectId naturally secure
+    """Update an existing feature by ObjectId (secure by design)"""
     feature = await FeatureService.update_feature(feature_id, feature_data)
     if not feature:
         raise HTTPException(status_code=404, detail="Feature not found")
     return FeatureRead.model_validate(feature.model_dump())
 
 @router.delete("/{feature_id}")
-async def delete_feature(feature_id: PydanticObjectId):
-    """Delete a feature"""
+async def delete_feature(feature_id: PydanticObjectId):  # ObjectId naturally secure  
+    """Delete a feature by ObjectId (secure by design)"""
     success = await FeatureService.delete_feature(feature_id)
     if not success:
         raise HTTPException(status_code=404, detail="Feature not found")
@@ -662,7 +780,7 @@ async def delete_feature(feature_id: PydanticObjectId):
 
 #### **Beanie Document Template**
 ```python
-from beanie import Document, Indexed
+from beanie import Document, Indexed, PydanticObjectId
 from pydantic import Field
 from typing import Optional
 from datetime import datetime
@@ -674,6 +792,7 @@ class FeatureStatus(str, Enum):
     PENDING = "pending"
 
 class Feature(Document):
+    id: PydanticObjectId = Field(default_factory=PydanticObjectId, alias="_id")
     name: Indexed(str) = Field(..., min_length=2, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     status: FeatureStatus = Field(default=FeatureStatus.ACTIVE)
@@ -695,6 +814,9 @@ class Feature(Document):
         """Update the updated_at timestamp"""
         self.updated_at = datetime.utcnow()
         await self.save()
+        
+    def __repr__(self):
+        return f"<Feature(id={self.id}, name='{self.name}')>"
 ```
 
 ### 🎯 **Beanie Performance Benefits**

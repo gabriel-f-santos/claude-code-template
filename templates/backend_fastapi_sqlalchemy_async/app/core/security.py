@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import PyJWTError
 from passlib.context import CryptContext
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from .config import settings
 from .database import get_async_session
-
+from ..services.auth_service import AuthService
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -49,7 +50,7 @@ def verify_token(token: str) -> dict:
                 detail="Invalid token"
             )
         return {"email": email}
-    except JWTError:
+    except PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
@@ -63,3 +64,12 @@ async def get_current_user_email(
     """Get current user email from JWT token - Async version."""
     token_data = verify_token(token.credentials)
     return token_data["email"]
+
+
+async def get_current_user(
+    token: str = Depends(security),
+    session: AsyncSession = Depends(get_async_session)
+):
+    """Get current user from JWT token - Async version."""
+    
+    return await AuthService.get_current_user(session, token.credentials)

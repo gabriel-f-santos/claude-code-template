@@ -38,7 +38,7 @@ pytest tests/test_users.py -v
 # Test a complete feature in < 15 minutes!
 curl -X POST "http://localhost:8000/users/register" \
      -H "Content-Type: application/json" \
-     -d '{"username": "demo", "email": "demo@example.com", "password": "demo123"}'
+     -d '{"email": "demo@example.com", "password": "demo123", "confirm_password": "demo123"}'
 ```
 
 ## 🔥 Vibecoding Async Patterns  
@@ -50,7 +50,7 @@ class UserService:
     @staticmethod
     async def create_user(session: AsyncSession, user_data: UserCreate) -> User:
         # Hash password and create user
-        user = User(username=user_data.username, email=user_data.email, ...)
+        user = User(email=user_data.email, ...)
         session.add(user)
         await session.commit()
         await session.refresh(user)
@@ -263,6 +263,66 @@ ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
 
+## 🔐 Padrão de Identificadores (Segurança + Performance)
+
+Adotamos o padrão híbrido: `id` (Integer, PK interno sequencial) + `public_id` (UUID v4 exposto externamente) para todos os domínios que precisam ser referenciados via API pública.
+
+### Por que não usar apenas UUID como PK?
+- Fragmentação de B-Tree: UUID aleatório degrada locality de páginas → mais cache misses
+- Índices maiores: 16 bytes vs 4 bytes (int) → mais RAM / I/O
+- JOINs mais lentos: FKs maiores propagam custo em queries compostas
+- Armazenamento: Mais páginas de índice → aumento cumulativo em grande escala
+
+### Benefícios do padrão `id` + `public_id`
+- Performance: PK pequena, sequencial (ou quase) otimiza inserts e índices
+- Segurança: APIs nunca expõem PK incremental (evita enumeration / scraping)
+- Evolução: Facilita sharding/future partitioning (UUID pode codificar origem futura)
+- Observabilidade: Logs internos usam `id` (legível, compacto); externos usam `public_id`
+- Padrão de mercado: Usado em Stripe, GitHub, Segment, etc.
+
+### Diretrizes de Implementação
+- Modelos: sempre adicionar `public_id = Column(UUID(...), default=uuid.uuid4, unique=True, index=True, nullable=False)`
+- Exposição API: Rotas, schemas de resposta, links e relacionamentos usam `public_id`
+- Banco: Nunca criar FKs para `public_id`; relacionamentos internos sempre via inteiro
+- Migrations: Em refactors (UUID-only -> híbrido) seguir passos:
+  1. Renomear PK atual UUID para `public_id`
+  2. Adicionar nova coluna `id` Integer nullable
+  3. Popular `id` via `row_number()` ou sequence
+  4. Ajustar FKs para novo `id`
+  5. Trocar PK e recriar índices
+- Indexes: Manter índice não único em `id` (PK já cria) e índice único em `public_id`
+- Logging: Padronizar: `log.info("User fetched", extra={"user_id": user.id, "user_public_id": str(user.public_id)})`
+
+### Padrão de Schemas (Pydantic)
+```python
+class UserResponse(BaseModel):
+    public_id: UUID  # UUID externo exposto como identificador
+    email: EmailStr
+```
+Obs: No schema expomos campo `id` mas é na verdade o `public_id` (documentar claramente). Se for necessário expor ambos para administração, usar `internal_id` / `public_id`.
+
+### Convenção de Nomes
+- Banco: `public_id`
+- Código: usar `public_id` consistentemente (evitar alias type hints confusos)
+- Frontend: Campo serializado como `id` (documentar no contrato) para UX simplificada
+
+### Checklist para Novos Modelos
+- [ ] `id` Integer PK
+- [ ] `public_id` UUID unique index
+- [ ] Índices adicionais necessários
+- [ ] Service layer aceita filtros por `public_id`
+- [ ] Schemas não vazam `id` interno
+- [ ] Teste cobrindo lookup por `public_id`
+
+### Erros Comuns a Evitar
+| Erro | Correção |
+|------|----------|
+| FK criada para `public_id` | Usar sempre FK para `id` |
+| Expor `id` interno em resposta | Trocar para `public_id` no schema |
+| Usar `public_id` em joins internos | Usar `id` interno |
+| Falta de índice em `public_id` | Adicionar índice + unique |
+
+---
 ## 🎯 Perfect for Live Coding Sessions!
 
 This template is specifically designed for:
@@ -702,24 +762,53 @@ async def test_get_feature_not_found():
     assert "not found" in response.json()["detail"]
 ```
 
-### 🎯 **Async Performance Benefits**
+## Padrão de Exposição de IDs (Atualização)
 
-#### **🚀 Async Advantages**
-- High concurrency with single thread
-- Non-blocking I/O operations
-- Better resource utilization
-- Scales well under load
+- Nunca expor `id` interno (INTEGER) em respostas de API.
+- Usuário: usar sempre `public_id` (UUID v4) em todos os endpoints (`/users`, `/auth/me`, tokens não devem conter `id` interno, apenas `user_public_id`).
+- Tokens JWT: payload deve conter `user_public_id` em vez de `id`.
 
-#### **📚 SQLAlchemy Async Benefits**
-- Connection pool efficiency
-- Concurrent query execution
-- Reduced thread overhead
-- Modern async patterns
+Checklist rápido:
+- [x] Schemas `UserResponse` e `UserRead` expõem `public_id`.
+- [x] AuthService / rotas `/auth` usam `user_public_id` no token.
+- [x] Frontend substituiu `user.id` por `user.public_id`.
 
-#### **🎨 Vibecoding with Async**
-- Fast concurrent operations
-- Real-time capabilities
-- Scalable architecture
-- Modern development patterns
+---
+## 🔐 Logging Seguro & Tratamento de Erros (Boas Práticas)
 
-Ready to vibecode your next async API! ⚡
+Objetivo: Registrar detalhes suficientes para diagnóstico interno SEM vazar informações sensíveis ao cliente.
+
+### Princípios
+1. Mensagens de erro para o cliente devem ser genéricas em falhas 5xx.
+2. Detalhes completos (stack trace, payload sanitizado, IDs de correlação) vão apenas para o log.
+3. Nunca logar: senhas, tokens JWT, secrets, dados pessoais completos.
+4. Adotar nível adequado: `info` (fluxo normal), `warning` (anomalia recuperável), `error` (falha negócio), `exception` (falha inesperada). 
+
+### Anti-Patterns (NÃO FAZER)
+| Anti-Pattern | Risco |
+|--------------|-------|
+| `detail=f"Erro: {e}"` em HTTP 500 | Vazamento de stack/infra | 
+| Logar `password` ou `confirm_password` | Exposição de credencial |
+| Logar token JWT completo | Reutilização / sequestro de sessão |
+| Levantar Exception crua sem handler global | Retorno 500 inconsistente |
+| Usar print() em vez de logging | Perda de contexto / centralização |
+
+### Padrão Recomendado (Exemplo Endpoint)
+```python
+try:
+    return await ChatService.process_message(session, message_data)
+except HTTPException:
+    raise  # erros controlados mantêm a mensagem de domínio
+except Exception as e:
+    logger.exception(
+        "chat.unexpected_error",
+        extra={
+            "session_public_id": str(message_data.session_public_id or message_data.session_id or ""),
+            "channel": message_data.channel,
+            error: e
+        }
+    )
+    raise HTTPException(status_code=500, detail="Erro interno do servidor.")
+```
+
+> Toda nova rota deve seguir este padrão antes de ir para produção.

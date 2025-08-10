@@ -3,17 +3,18 @@ from fastapi import FastAPI
 from .core.config import settings
 from .core.database import create_tables, close_async_engine
 from .api.users import router as users_router
+from .api.auth import router as auth_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle async startup and shutdown events."""
     # Startup
-    print("🚀 Starting FastAPI SQLAlchemy Async Vibecoding...")
+    print("Starting FastAPI SQLAlchemy Async Vibecoding...")
     await create_tables()
     yield
     # Shutdown
-    print("📴 Shutting down async...")
+    print("Shutting down async...")
     await close_async_engine()
 
 
@@ -23,7 +24,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.VERSION,
-        description="🚀 FastAPI + SQLAlchemy Async for rapid development and vibecoding sessions!",
+        description="FastAPI + SQLAlchemy Async for rapid development and vibecoding sessions",
         lifespan=lifespan
     )
 
@@ -31,14 +32,20 @@ def create_app() -> FastAPI:
     app.include_router(
         users_router,
         prefix="/users",
-        tags=["👤 Users (Async)"]
+        tags=["users"]
+    )
+    
+    app.include_router(
+        auth_router,
+        prefix="/api",
+        tags=["auth"]
     )
 
     @app.get("/")
     async def root():
         """Welcome endpoint - Great for testing async!"""
         return {
-            "message": "🚀 FastAPI SQLAlchemy Async Vibecoding API",
+            "message": "FastAPI SQLAlchemy Async Vibecoding API",
             "version": settings.VERSION,
             "async": True,
             "docs": "/docs",
@@ -48,7 +55,7 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         """Async health check endpoint"""
-        return {"status": "✅ Healthy (Async)", "app": settings.APP_NAME}
+        return {"status": "Healthy", "app": settings.APP_NAME}
 
     return app
 

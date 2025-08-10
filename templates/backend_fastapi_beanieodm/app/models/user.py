@@ -1,11 +1,15 @@
 from datetime import datetime
 from typing import Optional
-from beanie import Document
+from beanie import Document, PydanticObjectId
 from pydantic import EmailStr, Field
 
 
 class User(Document):
-    """User document model for MongoDB."""
+    """User document model for MongoDB.
+    
+    MongoDB ObjectId is already secure (similar to UUID) and performant.
+    No need for dual ID system - ObjectId provides both security and performance.
+    """
     
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr = Field(..., unique=True)

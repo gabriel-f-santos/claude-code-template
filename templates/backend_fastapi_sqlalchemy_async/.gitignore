@@ -1,0 +1,43 @@
+# Backend specific ignores (Python / FastAPI / Alembic)
+
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments (local backend venvs)
+venv/
+.venv/
+backend_venv/
+
+# Environment & secrets (override root if needed)
+.env
+.env.*
+*.pem
+*.key
+
+# Build / packaging artifacts
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+
+# Testing / coverage
+.pytest_cache/
+.coverage*
+htmlcov/
+.mypy_cache/
+.dmypy.json
+.pyre/
+
+# Alembic generated cache pyc
+alembic/versions/*.pyc
+
+# Logs
+*.log
+logs/
+
+# Misc
+.tmp/

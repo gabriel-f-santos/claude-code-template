@@ -79,10 +79,11 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <ToastProvider />
-            <main className="relative flex min-h-screen flex-col">
-              {children}
-            </main>
+            <ToastProvider>
+              <main className="relative flex min-h-screen flex-col">
+                {children}
+              </main>
+            </ToastProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>

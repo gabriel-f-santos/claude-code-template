@@ -1,13 +1,21 @@
 from datetime import datetime
 from typing import Optional, List
-from fastapi import HTTPException, status
+from beanie import PydanticObjectId
 from ..models.user import User
 from ..schemas.user import UserCreate, UserUpdate
 from ..core.security import get_password_hash, verify_password, create_access_token
+from ..core.exceptions import AuthenticationError, ValidationError, NotFoundError
+from ..core.logging import get_logger, log_security_event
+
+logger = get_logger(__name__)
 
 
 class UserService:
-    """Service class for user operations - perfect for vibecoding!"""
+    """Service class for user operations - perfect for vibecoding!
+    
+    MongoDB ObjectId is already secure and performant - no need for dual ID system.
+    ObjectId prevents enumeration attacks while maintaining excellent performance.
+    """
 
     @staticmethod
     async def create_user(user_data: UserCreate) -> User:
@@ -15,18 +23,24 @@ class UserService:
         # Check if user already exists
         existing_user = await User.find_one(User.email == user_data.email)
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+            # Log security event - potential account enumeration attempt
+            log_security_event(
+                "duplicate_email_registration_attempt",
+                details={'attempted_email': user_data.email}
             )
+            logger.warning(f"Registration attempt with existing email: {user_data.email}")
+            raise ValidationError("Email already registered")
         
         # Check username
         existing_username = await User.find_one(User.username == user_data.username)
         if existing_username:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username already taken"
+            # Log security event - potential account enumeration attempt
+            log_security_event(
+                "duplicate_username_registration_attempt",
+                details={'attempted_username': user_data.username}
             )
+            logger.warning(f"Registration attempt with existing username: {user_data.username}")
+            raise ValidationError("Username already taken")
         
         # Create user
         hashed_password = get_password_hash(user_data.password)
@@ -45,7 +59,7 @@ class UserService:
         return await User.find_one(User.email == email)
 
     @staticmethod
-    async def get_user_by_id(user_id: str) -> Optional[User]:
+    async def get_user_by_id(user_id: PydanticObjectId) -> Optional[User]:
         """Get user by ID."""
         try:
             return await User.get(user_id)
@@ -58,14 +72,12 @@ class UserService:
         return await User.find().skip(skip).limit(limit).to_list()
 
     @staticmethod
-    async def update_user(user_id: str, user_data: UserUpdate) -> Optional[User]:
+    async def update_user(user_id: PydanticObjectId, user_data: UserUpdate) -> Optional[User]:
         """Update user information."""
         user = await User.get(user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            logger.warning(f"Update attempt on non-existent user: {user_id}")
+            raise NotFoundError("User")
         
         # Update fields
         update_data = user_data.model_dump(exclude_unset=True)
@@ -76,14 +88,12 @@ class UserService:
         return await User.get(user_id)
 
     @staticmethod
-    async def delete_user(user_id: str) -> bool:
+    async def delete_user(user_id: PydanticObjectId) -> bool:
         """Delete user."""
         user = await User.get(user_id)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+            logger.warning(f"Update attempt on non-existent user: {user_id}")
+            raise NotFoundError("User")
         
         await user.delete()
         return True
@@ -101,16 +111,23 @@ class UserService:
         """Login user and return access token."""
         user = await UserService.authenticate_user(email, password)
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+            # Log failed login attempt for security monitoring
+            log_security_event(
+                "failed_login_attempt",
+                details={'email': email}
             )
+            logger.warning(f"Failed login attempt for email: {email}")
+            raise AuthenticationError("Invalid email or password")
         
         if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User account is disabled"
+            # Log attempt to access disabled account
+            log_security_event(
+                "disabled_account_access_attempt",
+                user_id=str(user.id),
+                details={'email': email}
             )
+            logger.warning(f"Login attempt on disabled account: {email}")
+            raise AuthenticationError("Account is disabled")
         
         access_token = create_access_token(data={"sub": user.email})
         return access_token

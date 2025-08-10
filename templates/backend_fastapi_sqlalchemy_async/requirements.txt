@@ -1,28 +1,32 @@
 # 🚀 FastAPI SQLAlchemy Async Vibecoding Dependencies
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi
+uvicorn[standard]
 
 # Database & Async ORM
-sqlalchemy[asyncio]==2.0.23
-alembic==1.12.1
+sqlalchemy[asyncio]
+alembic
 
 # Async Database Drivers
 # SQLite async (default - great for demos)
-aiosqlite==0.19.0
+aiosqlite
 # PostgreSQL async
-asyncpg==0.29.0
+asyncpg
 # MySQL async  
-# aiomysql==0.2.0
+# aiomysql
 
 # Authentication & Security
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+pyjwt[cryptography]
+passlib[bcrypt]
 
 # Configuration
-pydantic-settings==2.1.0
+pydantic
+pydantic-settings
 
 # Development & Testing
-python-multipart==0.0.6
-pytest==7.4.3
-pytest-asyncio==0.21.1
-httpx==0.25.2
+python-multipart
+pytest
+pytest-asyncio
+httpx
+
+# Lint / Format
+ruff

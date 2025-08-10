@@ -1,4 +1,5 @@
 from typing import List
+from beanie import PydanticObjectId
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from ..schemas.user import UserCreate, UserRead, UserUpdate, UserLogin, Token
 from ..services.user_service import UserService
@@ -45,8 +46,8 @@ async def get_users(
 
 
 @router.get("/{user_id}", response_model=UserRead)
-async def get_user(user_id: str):
-    """👤 Get user by ID"""
+async def get_user(user_id: PydanticObjectId):
+    """👤 Get user by ID (secure ObjectId)"""
     user = await UserService.get_user_by_id(user_id)
     if not user:
         raise HTTPException(
@@ -58,11 +59,11 @@ async def get_user(user_id: str):
 
 @router.put("/{user_id}", response_model=UserRead)
 async def update_user(
-    user_id: str,
+    user_id: PydanticObjectId,
     user_data: UserUpdate,
     current_user_email: str = Depends(get_current_user_email)
 ):
-    """✏️ Update user information"""
+    """✏️ Update user information (secure ObjectId)"""
     # Optional: Add permission check here
     user = await UserService.update_user(user_id, user_data)
     return UserRead.model_validate(user.model_dump())
@@ -70,10 +71,10 @@ async def update_user(
 
 @router.delete("/{user_id}")
 async def delete_user(
-    user_id: str,
+    user_id: PydanticObjectId,
     current_user_email: str = Depends(get_current_user_email)
 ):
-    """🗑️ Delete user"""
+    """🗑️ Delete user (secure ObjectId)"""
     # Optional: Add permission check here
     success = await UserService.delete_user(user_id)
     return {"message": "User deleted successfully"}

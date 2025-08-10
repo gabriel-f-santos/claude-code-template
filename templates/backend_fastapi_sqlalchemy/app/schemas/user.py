@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
@@ -23,10 +24,12 @@ class UserUpdate(BaseModel):
 
 class UserRead(UserBase):
     """Schema for reading user data (public info)."""
-    id: int = Field(..., description="User's unique identifier")
+    public_id: uuid.UUID = Field(..., description="User's public identifier (secure)")
     is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
+    
+    # Note: Internal 'id' field is never exposed for security and performance
 
     class Config:
         from_attributes = True

@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "FastAPI SQLAlchemy Vibecoding"
     VERSION: str = "1.0.0"
     DEBUG: bool = True
+    ENVIRONMENT: str = "development"  # development, staging, production
     
     # Database
     DATABASE_URL: str = "sqlite:///./vibecoding.db"

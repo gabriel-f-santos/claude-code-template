@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { authStorage, type User } from '@/lib/api';
+import { StateCreator, SetState, GetState } from 'zustand';
 
 interface AuthState {
   // State
@@ -22,84 +23,57 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
   
   // Getters
-  getUserId: () => number | null;
-  getUserName: () => string | null;
+  getUserPublicId: () => string | null; // substitui getUserId numérico
   getToken: () => string | null;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      // Initial state
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
+const createAuthSlice: StateCreator<AuthState> = (set: SetState<AuthState>, get: GetState<AuthState>) => ({
+  // Initial state
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
 
-      // Actions
-      login: (user: User, token: string) => {
-        // Store token in localStorage
-        authStorage.setToken(token);
-        
-        // Update store state
-        set({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      },
+  // Actions
+  login: (user: User, token: string) => {
+    authStorage.setToken(token);
+    set({ user, isAuthenticated: true, isLoading: false });
+  },
 
-      logout: () => {
-        // Remove token from localStorage
-        authStorage.removeToken();
-        
-        // Clear store state
-        set({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-      },
+  logout: () => {
+    authStorage.removeToken();
+    set({ user: null, isAuthenticated: false, isLoading: false });
+  },
 
-      updateUser: (updatedFields: Partial<User>) => {
-        const currentUser = get().user;
-        if (currentUser) {
-          set({
-            user: { ...currentUser, ...updatedFields },
-          });
-        }
-      },
-
-      setLoading: (loading: boolean) => {
-        set({ isLoading: loading });
-      },
-
-      // Getters
-      getUserId: () => get().user?.id || null,
-      
-      getUserName: () => get().user?.name || null,
-      
-      getToken: () => authStorage.getToken(),
-    }),
-    {
-      name: 'auth-store', // localStorage key
-      storage: createJSONStorage(() => localStorage),
-      // Only persist user data and auth status, not loading state
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
-      // Rehydrate auth state on app load
-      onRehydrateStorage: () => (state) => {
-        // Check if token still exists in localStorage
-        const token = authStorage.getToken();
-        if (!token && state) {
-          // Token was removed externally, clear auth state
-          state.user = null;
-          state.isAuthenticated = false;
-        }
-      },
+  updateUser: (updatedFields: Partial<User>) => {
+    const currentUser = get().user;
+    if (currentUser) {
+      set({ user: { ...currentUser, ...updatedFields } });
     }
-  )
+  },
+
+  setLoading: (loading: boolean) => set({ isLoading: loading }),
+
+  // Getters
+  getUserPublicId: () => get().user?.public_id || null,
+  getToken: () => authStorage.getToken(),
+});
+
+export const useAuthStore = create<AuthState>()(
+  persist(createAuthSlice, {
+    name: 'auth-store',
+    storage: createJSONStorage(() => localStorage),
+    partialize: (state: AuthState) => ({
+      user: state.user,
+      isAuthenticated: state.isAuthenticated,
+    }),
+    onRehydrateStorage: () => (state: AuthState | undefined) => {
+      const token = authStorage.getToken();
+      if (!token && state) {
+        state.user = null;
+        state.isAuthenticated = false;
+      }
+    },
+  })
 );
 
 // Helper hooks for common auth operations
@@ -117,6 +91,6 @@ export const useAuth = () => {
 };
 
 // Selector hooks for better performance
-export const useAuthUser = () => useAuthStore((state) => state.user);
-export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
-export const useAuthLoading = () => useAuthStore((state) => state.isLoading);
+export const useAuthUser = () => useAuthStore((state: AuthState) => state.user);
+export const useIsAuthenticated = () => useAuthStore((state: AuthState) => state.isAuthenticated);
+export const useAuthLoading = () => useAuthStore((state: AuthState) => state.isLoading);

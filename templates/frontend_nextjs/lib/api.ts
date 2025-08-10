@@ -6,7 +6,7 @@
  */
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 // Custom error class for API errors
 export class APIError extends Error {
@@ -39,60 +39,53 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// User types
+// Authentication types
 export interface User {
-  id: number;
-  username: string;
+  public_id: string; // UUID exposto pelo backend
   email: string;
-  name: string;
-  createdAt: string;
-  updatedAt: string;
+  is_active: boolean;
+  created_at: string;
+  last_login?: string;
+  full_name?: string;
+  bio?: string;
+  avatar_url?: string;
 }
 
-export interface UserCreateRequest {
-  username: string;
+export interface UserRegister {
   email: string;
-  name: string;
   password: string;
+  confirm_password: string;
 }
 
-export interface UserUpdateRequest {
-  username?: string;
-  email?: string;
-  name?: string;
-}
-
-export interface LoginRequest {
+export interface UserLogin {
   email: string;
   password: string;
 }
 
-export interface LoginResponse {
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
   user: User;
-  token: string;
-  expiresIn: string;
 }
 
-// Product types
-export interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  imageUrl: string | null;
-  inStock: boolean;
-  createdAt: string;
-  updatedAt: string;
+export interface RefreshTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
 }
 
-export interface ProductCreateRequest {
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  imageUrl?: string;
-  inStock?: boolean;
+export interface UserUpdate {
+  email?: string;
+  full_name?: string;
+  bio?: string;
+  avatar_url?: string;
+}
+
+export interface PasswordChange {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
 }
 
 // Generic fetch wrapper with error handling
@@ -158,26 +151,42 @@ async function apiRequest<T = any>(
 export const api = {
   // Authentication
   auth: {
-    login: (credentials: LoginRequest): Promise<LoginResponse> =>
-      apiRequest('/users/login', {
+    login: (credentials: UserLogin): Promise<AuthResponse> =>
+      apiRequest('/auth/login', {
         method: 'POST',
         body: JSON.stringify(credentials),
       }),
 
-    register: (userData: UserCreateRequest): Promise<User> =>
-      apiRequest('/users/register', {
+    register: (userData: UserRegister): Promise<User> =>
+      apiRequest('/auth/register', {
         method: 'POST',
         body: JSON.stringify(userData),
       }),
 
-    getCurrentUser: (): Promise<User> =>
-      apiRequest('/users/me'),
+    refreshToken: (): Promise<RefreshTokenResponse> =>
+      apiRequest('/auth/refresh', {
+        method: 'POST',
+      }),
 
-    logout: () => {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-      }
-    },
+    getCurrentUser: (): Promise<User> =>
+      apiRequest('/auth/me'),
+
+    updateProfile: (userData: UserUpdate): Promise<User> =>
+      apiRequest('/auth/me', {
+        method: 'PUT',
+        body: JSON.stringify(userData),
+      }),
+
+    changePassword: (passwordData: PasswordChange): Promise<MessageResponse> =>
+      apiRequest('/auth/change-password', {
+        method: 'PUT',
+        body: JSON.stringify(passwordData),
+      }),
+
+    logout: (): Promise<MessageResponse> =>
+      apiRequest('/auth/logout', {
+        method: 'POST',
+      }),
   },
 
   // Users
@@ -196,87 +205,19 @@ export const api = {
       return apiRequest(`/users${query ? `?${query}` : ''}`);
     },
 
-    getById: (id: number): Promise<User> =>
-      apiRequest(`/users/${id}`),
+    getById: (public_id: string): Promise<User> =>
+      apiRequest(`/users/${public_id}`),
 
-    update: (id: number, userData: UserUpdateRequest): Promise<User> =>
-      apiRequest(`/users/${id}`, {
+    update: (public_id: string, userData: UserUpdate): Promise<User> =>
+      apiRequest(`/users/${public_id}`, {
         method: 'PUT',
         body: JSON.stringify(userData),
       }),
 
-    delete: (id: number): Promise<void> =>
-      apiRequest(`/users/${id}`, { method: 'DELETE' }),
-
-    checkEmail: (email: string): Promise<{ exists: boolean }> =>
-      apiRequest('/users/check-email', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-      }),
-
-    checkUsername: (username: string): Promise<{ exists: boolean }> =>
-      apiRequest('/users/check-username', {
-        method: 'POST',
-        body: JSON.stringify({ username }),
-      }),
+    delete: (public_id: string): Promise<void> =>
+      apiRequest(`/users/${public_id}`, { method: 'DELETE' }),
   },
 
-  // Products
-  products: {
-    getAll: (params?: {
-      page?: number;
-      limit?: number;
-      search?: string;
-      category?: string;
-      minPrice?: number;
-      maxPrice?: number;
-      inStock?: boolean;
-    }): Promise<PaginatedResponse<Product>> => {
-      const searchParams = new URLSearchParams();
-      if (params?.page) searchParams.set('page', params.page.toString());
-      if (params?.limit) searchParams.set('limit', params.limit.toString());
-      if (params?.search) searchParams.set('search', params.search);
-      if (params?.category) searchParams.set('category', params.category);
-      if (params?.minPrice) searchParams.set('minPrice', params.minPrice.toString());
-      if (params?.maxPrice) searchParams.set('maxPrice', params.maxPrice.toString());
-      if (params?.inStock !== undefined) searchParams.set('inStock', params.inStock.toString());
-      
-      const query = searchParams.toString();
-      return apiRequest(`/products${query ? `?${query}` : ''}`);
-    },
-
-    getById: (id: number): Promise<Product> =>
-      apiRequest(`/products/${id}`),
-
-    create: (productData: ProductCreateRequest): Promise<Product> =>
-      apiRequest('/products', {
-        method: 'POST',
-        body: JSON.stringify(productData),
-      }),
-
-    update: (id: number, productData: Partial<ProductCreateRequest>): Promise<Product> =>
-      apiRequest(`/products/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(productData),
-      }),
-
-    delete: (id: number): Promise<void> =>
-      apiRequest(`/products/${id}`, { method: 'DELETE' }),
-
-    getCategories: (): Promise<{ categories: Array<{ name: string; count: number }> }> =>
-      apiRequest('/products/categories'),
-
-    updateStock: (id: number, inStock: boolean): Promise<Product> =>
-      apiRequest(`/products/${id}/stock`, {
-        method: 'PATCH',
-        body: JSON.stringify({ inStock }),
-      }),
-  },
-
-  // Generic helpers
-  health: (): Promise<{ status: string; timestamp: string }> =>
-    apiRequest('/health'),
-};
 
 // Auth token helpers
 export const authStorage = {

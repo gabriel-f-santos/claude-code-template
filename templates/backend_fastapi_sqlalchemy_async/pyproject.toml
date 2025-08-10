@@ -1,0 +1,47 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+indent-width = 4
+
+# Enable pyflakes + pycodestyle and some extras
+select = [
+    "F",   # pyflakes
+    "E", "W",  # pycodestyle
+    "I",  # isort
+    "N",  # pep8-naming
+    "UP", # pyupgrade
+    "B",  # flake8-bugbear
+    "A",  # flake8-builtins
+    "C4", # flake8-comprehensions
+    "PIE",# flake8-pie
+    "T20",# flake8-print (evitar print)
+    "Q",  # flake8-quotes
+]
+ignore = [
+    "E203",  # Espacamento antes de ':' (compatível com black caso adotado)
+    "W503",  # line break before binary operator
+]
+
+[tool.ruff.isort]
+known-first-party = ["app"]
+combine-as-imports = true
+force-sort-within-sections = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/versions/*.py" = ["D", "E501"]
+
+[tool.ruff.lint]
+# Could enable docstring (D) futuramente
+fixable = ["ALL"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
