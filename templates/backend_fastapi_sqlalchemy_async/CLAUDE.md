@@ -126,89 +126,6 @@ WHAT TO INCLUDE:
 5. Tests (tests/test_posts.py) with async patterns
 ```
 
-### Vibecoding Async Performance Expert  
-**For high-performance async optimizations!**
-
-```
-You are a Vibecoding Async Performance Expert.
-
-CONTEXT: This FastAPI SQLAlchemy async app prioritizes performance while maintaining simplicity.
-
-FOCUS ON:
-- Connection pooling optimization
-- Bulk async operations for multiple records
-- Efficient queries with proper indexing
-- Concurrent operations with asyncio.gather()
-- Memory-efficient pagination
-- Async transaction patterns
-
-VIBECODING PERFORMANCE PATTERNS:
-- Use bulk_insert_mappings() for multiple records
-- Implement efficient pagination with limit/offset
-- Add proper database indexes
-- Use select() with join strategies
-- Connection pool tuning for high concurrency
-
-EXAMPLE TASK:
-"Optimize the UserService for handling 1000+ concurrent user registrations with bulk operations, connection pooling, and performance monitoring."
-```
-
-### Vibecoding Async Troubleshooter
-**For debugging and fixing async issues!**
-
-```
-You are a Vibecoding Async Troubleshooting Expert.
-
-SPECIALIZES IN:
-- Async/await debugging
-- SQLAlchemy async session issues  
-- Connection pooling problems
-- Race condition detection
-- Performance bottleneck identification
-- Test async issues (pytest-asyncio)
-
-COMMON ASYNC ISSUES TO SOLVE:
-- "RuntimeError: asyncio.run() cannot be called from a running event loop"
-- Session lifecycle management
-- Proper transaction handling
-- Memory leaks in connection pools
-- Async context manager usage
-
-VIBECODING DEBUGGING APPROACH:
-- Focus on simple, clear solutions
-- Provide working code examples
-- Explain the root cause briefly
-- Ensure solution works in live demos
-```
-
-## ⚡ Vibecoding Async Benefits
-
-### 🚀 **Lightning Fast Development**
-- Complete features in 15 minutes 
-- Live coding ready
-- Perfect for demonstrations
-- Claude Code subagent optimized
-
-### 💪 **Async Performance**
-- Non-blocking I/O operations
-- High concurrency support  
-- Efficient resource utilization
-- Modern SQLAlchemy 2.0 patterns
-
-### 🎯 **Simple & Clean**
-- Clear service pattern
-- Focused business logic
-- Easy to understand and maintain
-- Great for rapid prototyping
-
-### 🔧 **Production Ready**
-- Connection pooling
-- Proper error handling
-- Comprehensive testing
-- Multiple database support (SQLite, PostgreSQL, MySQL)
-
-## 🔄 Key Differences from Sync Version
-
 ### Async Database Operations
 ```python
 # Sync version
@@ -284,12 +201,6 @@ Adotamos o padrão híbrido: `id` (Integer, PK interno sequencial) + `public_id`
 - Modelos: sempre adicionar `public_id = Column(UUID(...), default=uuid.uuid4, unique=True, index=True, nullable=False)`
 - Exposição API: Rotas, schemas de resposta, links e relacionamentos usam `public_id`
 - Banco: Nunca criar FKs para `public_id`; relacionamentos internos sempre via inteiro
-- Migrations: Em refactors (UUID-only -> híbrido) seguir passos:
-  1. Renomear PK atual UUID para `public_id`
-  2. Adicionar nova coluna `id` Integer nullable
-  3. Popular `id` via `row_number()` ou sequence
-  4. Ajustar FKs para novo `id`
-  5. Trocar PK e recriar índices
 - Indexes: Manter índice não único em `id` (PK já cria) e índice único em `public_id`
 - Logging: Padronizar: `log.info("User fetched", extra={"user_id": user.id, "user_public_id": str(user.public_id)})`
 
@@ -323,16 +234,6 @@ Obs: No schema expomos campo `id` mas é na verdade o `public_id` (documentar cl
 | Falta de índice em `public_id` | Adicionar índice + unique |
 
 ---
-## 🎯 Perfect for Live Coding Sessions!
-
-This template is specifically designed for:
-- **Claude Code subagent development**
-- **Live coding demonstrations**  
-- **Rapid feature development**
-- **Teaching async Python patterns**
-- **Building MVPs quickly**
-
-Start coding and see results in minutes, not hours! 🚀
 
 ## 🎯 Feature Development Guide
 
@@ -383,129 +284,6 @@ alembic upgrade head
 touch tests/test_products.py
 pytest tests/test_products.py -v
 ```
-
-### 🤖 **Claude Code Prompt Templates**
-
-#### **📝 Complete Async SQLAlchemy CRUD Feature Prompt**
-```
-Você é um especialista em FastAPI SQLAlchemy Async Vibecoding API development.
-
-TAREFA: Criar a feature "Products" completa seguindo nossa arquitetura vibecoding SQLAlchemy Async.
-
-ARQUITETURA OBRIGATÓRIA:
-app/
-├── models/product.py (SQLAlchemy async model + relationships)
-├── schemas/product.py (Pydantic schemas para validation)
-├── services/product_service.py (async business logic + database operations)
-├── api/products.py (async FastAPI router + endpoints)
-└── tests/test_products.py (comprehensive async tests)
-
-REQUISITOS TÉCNICOS:
-✅ SQLAlchemy 2.0 async model com proper relationships
-✅ Pydantic schemas para validation automática
-✅ FastAPI automatic documentation
-✅ Error handling com proper HTTP codes
-✅ Async database operations (CRUD) com AsyncSession
-✅ Dependency injection com get_async_session
-✅ Testes com 100% de cobertura dos endpoints (async)
-✅ Alembic migration para database schema
-
-FUNCIONALIDADES:
-- GET /products (list with pagination, filters) - async
-- GET /products/{id} (get by ID) - async
-- POST /products (create with validation) - async
-- PUT /products/{id} (update) - async
-- DELETE /products/{id} (delete) - async
-- GET /products/category/{category_id} (products by category) - async
-
-SQLALCHEMY ASYNC MODEL NECESSÁRIO:
-```python
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, select
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-from ..core.database import Base
-
-class Product(Base):
-    __tablename__ = "products"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False, index=True)
-    description = Column(Text)
-    price = Column(Float, nullable=False, index=True)
-    category_id = Column(Integer, ForeignKey("categories.id"))
-    in_stock = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    
-    # Relationships
-    category = relationship("Category", back_populates="products")
-```
-
-PADRÕES ASYNC SQLALCHEMY VIBECODING:
-- Service class com métodos async estáticos usando AsyncSession
-- SQLAlchemy 2.0 select() syntax (não query())
-- Proper error handling com HTTPException
-- Async database transactions para operações complexas
-- Relationships bem definidas com lazy loading
-- Testes usando async TestClient com database
-
-ENTREGUE: Código completo de todos os arquivos + migration.
-```
-
-#### **📱 Simple Async SQLAlchemy Feature Prompt**
-```
-TAREFA: Criar feature "Categories" simples com SQLAlchemy Async.
-
-ARQUITETURA MÍNIMA:
-- app/models/category.py (SQLAlchemy async model)
-- app/schemas/category.py (Pydantic schemas)
-- app/services/category_service.py (async basic CRUD)
-- app/api/categories.py (async FastAPI router)
-- tests/test_categories.py (async basic tests)
-
-FUNCIONALIDADES:
-- CRUD básico async (Create, Read, Update, Delete)
-- Validação com Pydantic
-- Database indexes básicos
-- Testes async essenciais
-
-NÃO PRECISA: Relacionamentos complexos, business logic avançada.
-```
-
-#### **🔄 Extend Existing Async Feature Prompt**
-```
-TAREFA: Adicionar "Reviews" à feature Products existente (async).
-
-MODIFICAÇÕES NECESSÁRIAS:
-
-1. app/models/review.py
-   - Criar async Review model com ForeignKey para Product e User
-
-2. app/models/product.py
-   - Adicionar relationship("Review", back_populates="product")
-
-3. app/services/product_service.py
-   - Adicionar async get_product_reviews(session, product_id)
-   - Adicionar async add_review(session, product_id, review_data)
-
-4. app/api/products.py
-   - GET /products/{id}/reviews (async)
-   - POST /products/{id}/reviews (async)
-
-5. app/schemas/product.py
-   - Adicionar Review schemas
-   - Estender ProductRead com reviews
-
-6. tests/test_products.py
-   - Adicionar testes async para review endpoints
-
-7. Alembic migration
-   - alembic revision --autogenerate -m "Add reviews table"
-
-MANTENHA: Arquitetura SQLAlchemy async existente, foreign keys, indexes.
-```
-
-### 🏗️ **Async SQLAlchemy Architecture Decision Tree**
 
 ```
 Nova Feature Async?
@@ -761,22 +539,6 @@ async def test_get_feature_not_found():
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
 ```
-
-## Padrão de Exposição de IDs (Atualização)
-
-- Nunca expor `id` interno (INTEGER) em respostas de API.
-- Usuário: usar sempre `public_id` (UUID v4) em todos os endpoints (`/users`, `/auth/me`, tokens não devem conter `id` interno, apenas `user_public_id`).
-- Tokens JWT: payload deve conter `user_public_id` em vez de `id`.
-
-Checklist rápido:
-- [x] Schemas `UserResponse` e `UserRead` expõem `public_id`.
-- [x] AuthService / rotas `/auth` usam `user_public_id` no token.
-- [x] Frontend substituiu `user.id` por `user.public_id`.
-
----
-## 🔐 Logging Seguro & Tratamento de Erros (Boas Práticas)
-
-Objetivo: Registrar detalhes suficientes para diagnóstico interno SEM vazar informações sensíveis ao cliente.
 
 ### Princípios
 1. Mensagens de erro para o cliente devem ser genéricas em falhas 5xx.
